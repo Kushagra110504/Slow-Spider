@@ -95,4 +95,19 @@ body {
   .glow-cyan {
     box-shadow: 0 0 15px -2px rgba(6, 182, 212, 0.25);
   }
+
+  /* Sharp non-blurry outline stroke: white on dark theme, black on light theme */
+  .logo-stroke-outline {
+    filter: drop-shadow(1px 0 0 #000000) 
+            drop-shadow(-1px 0 0 #000000) 
+            drop-shadow(0 1px 0 #000000) 
+            drop-shadow(0 -1px 0 #000000);
+  }
+
+  .dark .logo-stroke-outline {
+    filter: drop-shadow(1px 0 0 #ffffff) 
+            drop-shadow(-1px 0 0 #ffffff) 
+            drop-shadow(0 1px 0 #ffffff) 
+            drop-shadow(0 -1px 0 #ffffff);
+  }
 }

@@ -47,15 +47,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00E575] to-[#06B6D4] p-[1px] shadow-[0_0_15px_rgba(0,229,117,0.4)]">
-              <div className="w-full h-full bg-vault-surface rounded-[11px] flex items-center justify-center p-1 overflow-hidden">
-                <img
-                  src="/logo.png"
-                  alt="Slow Spider"
-                  className="w-full h-full object-contain filter drop-shadow-[0_0_1px_rgba(0,0,0,0.8)] dark:drop-shadow-[0_0_1.5px_#ffffff] dark:drop-shadow-[0_0_3px_rgba(255,255,255,0.7)]"
-                />
-              </div>
-            </div>
+            <img
+              src="/logo.png"
+              alt="Slow Spider"
+              className="w-8 h-8 object-contain logo-stroke-outline shrink-0"
+            />
             <div>
               <h1 className="text-sm font-bold text-vault-textPrimary tracking-tight">
                 SLOW SPIDER
