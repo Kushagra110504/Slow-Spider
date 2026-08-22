@@ -24,6 +24,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const handleSessionUser = (sessionUser: any) => {
+    const dbUser = dataService.getUserByEmail(sessionUser.email || '') || dataService.getUserById(sessionUser.id);
+    if (dbUser) {
+      setUser(dbUser);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(dbUser));
+    } else {
+      const displayName = sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0] || 'User';
+      const newUser: User = {
+        id: sessionUser.id,
+        email: sessionUser.email || '',
+        name: displayName,
+        avatar_url: sessionUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=10b981,06b6d4,6366f1`,
+        role: 'user',
+        created_at: new Date().toISOString(),
+      };
+      dataService.registerUser(newUser);
+      setUser(newUser);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUser));
+    }
+  };
+
   // Initialize Auth state from storage or Supabase session
   useEffect(() => {
     const initAuth = async () => {
@@ -31,24 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isSupabaseConfigured && supabase) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            const dbUser = dataService.getUserByEmail(session.user.email || '') || dataService.getUserById(session.user.id);
-            if (dbUser) {
-              setUser(dbUser);
-              localStorage.setItem(AUTH_USER_KEY, JSON.stringify(dbUser));
-            } else {
-              const displayName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
-              const newUser: User = {
-                id: session.user.id,
-                email: session.user.email || '',
-                name: displayName,
-                avatar_url: session.user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=10b981,06b6d4,6366f1`,
-                role: 'user',
-                created_at: new Date().toISOString(),
-              };
-              dataService.registerUser(newUser);
-              setUser(newUser);
-              localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUser));
-            }
+            handleSessionUser(session.user);
           } else {
             // Check local persistence
             const savedUser = localStorage.getItem(AUTH_USER_KEY);
@@ -83,6 +87,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initAuth();
+
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    if (isSupabaseConfigured && supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          handleSessionUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem(AUTH_USER_KEY);
+          localStorage.removeItem(AUTH_SESSION_KEY);
+        }
+        setIsLoading(false);
+      });
+      authSubscription = subscription;
+    }
+
+    return () => {
+      authSubscription?.unsubscribe();
+    };
   }, []);
 
 const MAX_FAILED_ATTEMPTS = 5;
