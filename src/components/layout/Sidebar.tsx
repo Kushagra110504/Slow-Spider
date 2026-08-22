@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutGrid, FolderGit2, Calendar, Snowflake, Trash2,
-  Layers, Users, AlertCircle, LucideIcon
+  Users, AlertCircle, LucideIcon
 } from 'lucide-react';
 import { Toggle } from '../ui/Toggle';
 import { cn } from '../../lib/utils';
@@ -48,8 +48,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00E575] to-[#06B6D4] p-[1px] shadow-[0_0_15px_rgba(0,229,117,0.4)]">
-              <div className="w-full h-full bg-vault-surface rounded-[11px] flex items-center justify-center">
-                <Layers className="w-5 h-5 text-[#00C966] dark:text-[#00E575]" />
+              <div className="w-full h-full bg-vault-surface rounded-[11px] flex items-center justify-center p-1 overflow-hidden">
+                <img
+                  src="/logo.png"
+                  alt="Slow Spider"
+                  className="w-full h-full object-contain filter drop-shadow-[0_0_1px_rgba(0,0,0,0.8)] dark:drop-shadow-[0_0_1.5px_#ffffff] dark:drop-shadow-[0_0_3px_rgba(255,255,255,0.7)]"
+                />
               </div>
             </div>
             <div>
