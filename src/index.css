@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Theme Tokens */
+:root {
+  --vault-bg: #FFFFFF;
+  --vault-surface: #FFFFFF;
+  --vault-sidebar: #FFFFFF;
+  --vault-card: #FFFFFF;
+  --vault-card-hover: #F4FDF7;
+  --vault-card-alt: #F8FAFC;
+  --vault-border: #E8EDF5;
+  --vault-border-light: #D5DFEC;
+  --vault-text-primary: #090E17;
+  --vault-text-secondary: #2C384A;
+  --vault-text-muted: #5E6E82;
+  --brand-green: #00E575;
+  --brand-green-hover: #00D069;
+  --brand-green-text: #045E33;
+  --brand-green-glow: rgba(0, 229, 117, 0.4);
+  --brand-green-subtle: rgba(0, 229, 117, 0.15);
+}
+
+html.dark,
+.dark {
+  --vault-bg: #090A0C;
+  --vault-surface: #0E1115;
+  --vault-sidebar: #0B0D10;
+  --vault-card: #13161C;
+  --vault-card-hover: #181C24;
+  --vault-card-alt: #161A22;
+  --vault-border: #202530;
+  --vault-border-light: #2D3545;
+  --vault-text-primary: #F1F5F9;
+  --vault-text-secondary: #BAC6D5;
+  --vault-text-muted: #8E9AA8;
+  --brand-green: #00E575;
+  --brand-green-hover: #00D069;
+  --brand-green-text: #00E575;
+  --brand-green-glow: rgba(0, 229, 117, 0.4);
+  --brand-green-subtle: rgba(0, 229, 117, 0.15);
+}
+
+body {
+  background-color: var(--vault-bg) !important;
+  color: var(--vault-text-primary) !important;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--vault-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vault-border-light);
+}
+
+@layer utilities {
+  .glass-card {
+    background-color: var(--vault-card);
+    border: 1px solid var(--vault-border);
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.04);
+  }
+
+  .glass-card-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-card-hover:hover {
+    background-color: var(--vault-card-hover);
+    border-color: var(--vault-border-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+  }
+
+  .glow-green,
+  .glow-lime {
+    box-shadow: 0 0 18px -2px rgba(0, 229, 117, 0.45);
+  }
+  .glow-amber {
+    box-shadow: 0 0 15px -2px rgba(245, 158, 11, 0.25);
+  }
+  .glow-red {
+    box-shadow: 0 0 15px -2px rgba(239, 68, 68, 0.25);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 15px -2px rgba(6, 182, 212, 0.25);
+  }
+}

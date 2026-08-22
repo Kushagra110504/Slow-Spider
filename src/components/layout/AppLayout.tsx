@@ -1,0 +1,182 @@
+import React, { useState, useEffect } from 'react';
+import { Sidebar, NavTab } from './Sidebar';
+import { Navbar } from './Navbar';
+import { CommandSearchModal } from '../common/CommandSearchModal';
+import { NotificationDrawer } from '../common/NotificationDrawer';
+import { FloatingInbox } from '../inbox/FloatingInbox';
+import { NewProjectModal } from '../projects/NewProjectModal';
+import { UserProfileModal } from '../auth/UserProfileModal';
+import { dataService } from '../../services/dataService';
+import { Project } from '../../types/database';
+import { Inbox as InboxIcon } from 'lucide-react';
+
+interface AppLayoutProps {
+  currentTab: NavTab;
+  onSelectTab: (tab: NavTab) => void;
+  selectedProjectId?: string;
+  onNavigateToProject: (projectId: string) => void;
+  children: React.ReactNode;
+}
+
+import { useAuth } from '../../context/AuthContext';
+
+export const AppLayout: React.FC<AppLayoutProps> = ({
+  currentTab,
+  onSelectTab,
+  selectedProjectId,
+  onNavigateToProject,
+  children,
+}) => {
+  const { user } = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pv_theme');
+    return saved !== null ? saved === 'dark' : true;
+  });
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [inboxCount, setInboxCount] = useState(0);
+  const [trashCount, setTrashCount] = useState(0);
+
+  // Sync theme with document.documentElement and body
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.body.classList.add('dark');
+      document.body.classList.remove('light');
+      localStorage.setItem('pv_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.body.classList.remove('dark');
+      document.body.classList.add('light');
+      localStorage.setItem('pv_theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    const update = () => {
+      setUnreadCount(dataService.getNotifications(user).filter(n => !n.read).length);
+      setInboxCount(dataService.getInboxItems(user).length);
+      setTrashCount(dataService.getTrashItems(user).length);
+    };
+    update();
+    return dataService.subscribe(update);
+  }, [user]);
+
+  // Global Keyboard shortcuts: Ctrl+K for search, I for inbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+      if (
+        e.key.toLowerCase() === 'i' &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)
+      ) {
+        setIsInboxOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleToggleDarkMode = (val?: boolean) => {
+    setIsDarkMode(prev => typeof val === 'boolean' ? val : !prev);
+  };
+
+  const handleCreatedProject = (project: Project) => {
+    onNavigateToProject(project.id);
+  };
+
+  return (
+    <div className="min-h-screen bg-vault-bg text-vault-textPrimary flex transition-colors">
+      {/* Sidebar Navigation */}
+      <Sidebar
+        currentTab={currentTab}
+        onSelectTab={onSelectTab}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
+        selectedProjectId={selectedProjectId}
+        trashCount={trashCount}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Navbar */}
+        <Navbar
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenInbox={() => setIsInboxOpen(true)}
+          onOpenNewProject={() => setIsNewProjectOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          unreadCount={unreadCount}
+          inboxCount={inboxCount}
+        />
+
+        {/* Dynamic Page Content */}
+        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+          {children}
+        </main>
+      </div>
+
+      {/* Floating Inbox Quick Button in bottom right corner */}
+      <button
+        onClick={() => setIsInboxOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#00E575] hover:bg-[#00D069] text-[#042B16] font-bold shadow-[0_0_20px_rgba(0,229,117,0.45)] hover:shadow-[0_0_25px_rgba(0,229,117,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#00C966]/40"
+        title="Floating Inbox (Shortcut: I)"
+      >
+        <InboxIcon className="w-4 h-4" />
+        <span className="text-xs">Quick Capture</span>
+        {inboxCount > 0 && (
+          <span className="w-5 h-5 rounded-full bg-[#042B16] text-[#00E575] text-[10px] flex items-center justify-center font-black">
+            {inboxCount}
+          </span>
+        )}
+      </button>
+
+      {/* Command Search Modal (Ctrl+K) */}
+      <CommandSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigate={(tab, projectId) => {
+          if (projectId) onNavigateToProject(projectId);
+          else onSelectTab(tab);
+        }}
+      />
+
+      {/* Notification Drawer */}
+      <NotificationDrawer
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      {/* Floating Inbox Overlay Modal */}
+      <FloatingInbox
+        isOpen={isInboxOpen}
+        onClose={() => setIsInboxOpen(false)}
+        onNavigateToProject={(id) => onNavigateToProject(id)}
+      />
+
+      {/* New Project Modal */}
+      <NewProjectModal
+        isOpen={isNewProjectOpen}
+        onClose={() => setIsNewProjectOpen(false)}
+        onCreated={handleCreatedProject}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
+    </div>
+  );
+};
