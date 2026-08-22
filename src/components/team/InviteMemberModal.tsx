@@ -85,9 +85,41 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
               placeholder="colleague@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] transition-colors"
             />
           </div>
+
+          {/* Quick pick from network */}
+          {user && (() => {
+            const network = dataService.getNetworkUsers(user).filter(u => 
+              u.id !== user.id && 
+              !project.members?.some(m => m.id === u.id || m.email.toLowerCase() === u.email.toLowerCase())
+            );
+            if (network.length === 0) return null;
+            return (
+              <div className="mt-2">
+                <span className="text-[10px] text-vault-textMuted font-semibold uppercase tracking-wider block mb-1">
+                  Quick Pick from Network:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {network.map((nu) => (
+                    <button
+                      key={nu.id}
+                      type="button"
+                      onClick={() => setEmail(nu.email)}
+                      className={`text-[11px] px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+                        email.toLowerCase() === nu.email.toLowerCase()
+                          ? 'bg-[#00E575]/20 border-[#00E575]/50 text-[#045E33] dark:text-[#00E575] font-bold'
+                          : 'bg-vault-cardHover border-vault-border text-vault-textSecondary hover:text-vault-textPrimary'
+                      }`}
+                    >
+                      <span>{nu.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         <div>

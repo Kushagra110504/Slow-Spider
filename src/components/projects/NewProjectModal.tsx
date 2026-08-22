@@ -10,18 +10,20 @@ import { Project, TeamCategory, User } from '../../types/database';
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (project: Project) => void;
+  onProjectCreated?: (project: Project) => void;
+  onOpenNetwork?: () => void;
 }
 
 export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   isOpen,
   onClose,
-  onCreated,
+  onProjectCreated,
+  onOpenNetwork,
 }) => {
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [teamCategory, setTeamCategory] = useState<TeamCategory>('Design team');
+  const [teamCategory, setTeamCategory] = useState<TeamCategory>('Product team');
   const [dueDate, setDueDate] = useState('2026-09-30');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['BRAND', 'LAUNCH']);
@@ -30,17 +32,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const users = dataService.getUsers();
-      // If currently logged-in user is not in users list yet, include them
-      const allUsers = [...users];
-      if (user && !allUsers.some(u => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase())) {
-        allUsers.unshift(user);
-      }
-      setAvailableUsers(allUsers);
+      const networkUsers = dataService.getNetworkUsers(user);
+      setAvailableUsers(networkUsers);
       if (user) {
         setSelectedMembers([user]);
-      } else if (allUsers.length > 0) {
-        setSelectedMembers([allUsers[0]]);
+      } else if (networkUsers.length > 0) {
+        setSelectedMembers([networkUsers[0]]);
       } else {
         setSelectedMembers([]);
       }
@@ -86,7 +83,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
     setName('');
     setDescription('');
-    onCreated(newProject);
+    if (onProjectCreated) onProjectCreated(newProject);
     onClose();
   };
 
@@ -167,9 +164,23 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
         {/* Team Members Selection */}
         <div>
-          <label className="block text-xs font-semibold text-vault-textSecondary mb-1.5">
-            Assign Team Members
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-vault-textSecondary">
+              Assign Team Members (From Network)
+            </label>
+            {onOpenNetwork && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenNetwork();
+                }}
+                className="text-[11px] text-[#00C966] dark:text-[#00E575] hover:underline font-semibold cursor-pointer"
+              >
+                + Add Colleagues to Network
+              </button>
+            )}
+          </div>
           {availableUsers.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {availableUsers.map((u) => {
@@ -192,9 +203,23 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
               })}
             </div>
           ) : (
-            <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border text-xs text-vault-textMuted flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-              <span>No other registered team members yet. You can invite colleagues via email once the project is created.</span>
+            <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border text-xs text-vault-textMuted flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
+                <span>No connected colleagues in your network yet.</span>
+              </div>
+              {onOpenNetwork && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenNetwork();
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#00E575] text-[#042B16] hover:bg-[#00D069] cursor-pointer"
+                >
+                  Find People
+                </button>
+              )}
             </div>
           )}
         </div>

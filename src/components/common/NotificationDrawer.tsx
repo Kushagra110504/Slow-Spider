@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, X, AlertTriangle, Info, CheckCircle2, UserPlus, Check } from 'lucide-react';
+import { Bell, CheckCheck, X, AlertTriangle, Info, CheckCircle2, UserPlus, Check, Users } from 'lucide-react';
 import { dataService } from '../../services/dataService';
-import { Notification, TeamInvitation } from '../../types/database';
+import { Notification, TeamInvitation, UserConnection } from '../../types/database';
 import { formatTimeAgo } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
@@ -10,21 +10,31 @@ import { Avatar } from '../ui/Avatar';
 interface NotificationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenNetwork?: () => void;
 }
 
 export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   isOpen,
   onClose,
+  onOpenNetwork,
 }) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
+  const [connectionRequests, setConnectionRequests] = useState<UserConnection[]>([]);
 
   useEffect(() => {
     const update = () => {
       setNotifications(dataService.getNotifications(user));
       if (user?.email) {
         setInvitations(dataService.getPendingInvitationsForUser(user.email));
+      }
+      if (user) {
+        const conns = dataService.getConnections(user);
+        setConnectionRequests(conns.filter(c => 
+          c.status === 'pending' && 
+          (c.recipient_id === user.id || (c.recipient_email && c.recipient_email.toLowerCase() === user.email.toLowerCase()))
+        ));
       }
     };
     update();
@@ -48,6 +58,16 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 
   const handleDeclineInvite = (inviteId: string) => {
     dataService.declineTeamInvitation(inviteId);
+  };
+
+  const handleAcceptConnection = (connId: string) => {
+    if (!user) return;
+    dataService.acceptConnectionRequest(connId, user);
+  };
+
+  const handleDeclineConnection = (connId: string) => {
+    if (!user) return;
+    dataService.declineConnectionRequest(connId, user);
   };
 
   const getNotificationIcon = (type: Notification['type']) => {
@@ -101,6 +121,69 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 
         {/* Notifications & Invites List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Pending Network Connection Requests */}
+          {connectionRequests.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-bold text-[#00C966] dark:text-[#00E575] uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Connection Requests ({connectionRequests.length})</span>
+                </h3>
+                {onOpenNetwork && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenNetwork();
+                    }}
+                    className="text-[10px] text-[#00C966] dark:text-[#00E575] hover:underline font-bold cursor-pointer"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
+              {connectionRequests.map((req) => (
+                <div key={req.id} className="p-3.5 rounded-2xl bg-[#00E575]/10 border border-[#00E575]/30 text-vault-textPrimary space-y-2.5 shadow-sm">
+                  <div className="flex items-start gap-2.5">
+                    <Avatar
+                      user={{ name: req.requester_name, avatar_url: req.requester_avatar }}
+                      size="sm"
+                      className="shrink-0 mt-0.5 border border-[#00E575]/40"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold leading-tight">
+                        <span className="text-[#045E33] dark:text-[#00E575] font-bold">{req.requester_name}</span> wants to add you to their network.
+                      </p>
+                      <span className="text-[10px] text-vault-textMuted font-mono block mt-1">
+                        {formatTimeAgo(req.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      className="flex-1 py-1.5 text-xs font-bold"
+                      onClick={() => handleAcceptConnection(req.id)}
+                    >
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      Accept
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="py-1.5 text-xs text-vault-textMuted hover:text-red-400"
+                      onClick={() => handleDeclineConnection(req.id)}
+                    >
+                      <X className="w-3.5 h-3.5 mr-1" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Pending Team Invitations Section */}
           {invitations.length > 0 && (
             <div className="space-y-2">

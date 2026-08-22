@@ -57,7 +57,7 @@ export interface Milestone {
   id: string;
   project_id: string;
   title: string;
-  description: string;
+  description?: string;
   status: MilestoneStatus;
   due_date: string;
   trashed_at: string | null;
@@ -70,7 +70,7 @@ export interface InboxItem {
   user_id: string;
   type: InboxItemType;
   title: string;
-  content: string;
+  content?: string;
   status: InboxItemStatus;
   created_at: string;
 }
@@ -98,6 +98,7 @@ export interface Notification {
   read: boolean;
   link?: string;
   invitation_id?: string;
+  connection_id?: string;
   created_at: string;
 }
 
@@ -134,6 +135,23 @@ export interface TeamInvitation {
   role: 'member' | 'viewer';
   status: 'pending' | 'accepted' | 'declined';
   created_at: string;
+}
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined' | 'blocked';
+
+export interface UserConnection {
+  id: string;
+  requester_id: string;
+  requester_name: string;
+  requester_avatar?: string;
+  requester_email?: string;
+  recipient_id: string;
+  recipient_name: string;
+  recipient_avatar?: string;
+  recipient_email?: string;
+  status: ConnectionStatus;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface AdminPlatformStats {

@@ -156,6 +156,17 @@ CREATE TABLE IF NOT EXISTS public.team_invitations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 11. User Connections Table (Mutual Network System)
+CREATE TABLE IF NOT EXISTS public.user_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  requester_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'blocked')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(requester_id, recipient_id)
+);
+
 -- Automatic Project Progress Calculation Trigger from Milestones
 CREATE OR REPLACE FUNCTION update_project_milestone_progress()
 RETURNS TRIGGER AS $$
@@ -202,6 +213,7 @@ ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_connections ENABLE ROW LEVEL SECURITY;
 
 -- Helper security function: Check project co-membership or ownership
 CREATE OR REPLACE FUNCTION public.can_access_project(p_id UUID)
@@ -315,9 +327,19 @@ CREATE POLICY "Project owners can issue invitations"
     project_id IN (SELECT id FROM public.projects WHERE owner_id = auth.uid())
   );
 
-CREATE POLICY "Invitees and owners can update invitation status"
-  ON public.team_invitations FOR UPDATE
-  USING (
-    invitee_email = (SELECT email FROM public.users WHERE id = auth.uid()) OR
-    inviter_id = auth.uid()
-  );
+-- 11. User Connections Table RLS (Mutual Network Isolation)
+CREATE POLICY "Connections accessible by participants"
+  ON public.user_connections FOR SELECT
+  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+
+CREATE POLICY "Users can create connection requests"
+  ON public.user_connections FOR INSERT
+  WITH CHECK (auth.uid() = requester_id);
+
+CREATE POLICY "Participants can update connection status"
+  ON public.user_connections FOR UPDATE
+  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+
+CREATE POLICY "Participants can delete connections"
+  ON public.user_connections FOR DELETE
+  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);

@@ -1,7 +1,7 @@
 import { 
   Project, Task, Milestone, InboxItem, Notification, ActivityLog, 
   TrashItem, User, Attachment, UserRole, TeamCategory, TaskPriority,
-  TeamInvitation, AdminPlatformStats 
+  TeamInvitation, AdminPlatformStats, UserConnection 
 } from '../types/database';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Validation } from '../lib/validation';
@@ -70,6 +70,7 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'pv_notifications_v1',
   ATTACHMENTS: 'pv_attachments_v1',
   INVITATIONS: 'pv_invitations_v1',
+  CONNECTIONS: 'pv_connections_v1',
 };
 
 class DataService {
@@ -829,6 +830,219 @@ class DataService {
     return true;
   }
 
+  // --- USER CONNECTIONS (MUTUAL NETWORK SYSTEM) ---
+  public getConnections(user?: User | null): UserConnection[] {
+    const data = localStorage.getItem(STORAGE_KEYS.CONNECTIONS);
+    const all: UserConnection[] = data ? JSON.parse(data) : [];
+    if (!user) return all;
+    return all.filter(c => 
+      c.requester_id === user.id || 
+      c.recipient_id === user.id ||
+      (c.requester_email && c.requester_email.toLowerCase() === user.email.toLowerCase()) ||
+      (c.recipient_email && c.recipient_email.toLowerCase() === user.email.toLowerCase())
+    );
+  }
+
+  public getAcceptedConnections(user?: User | null): UserConnection[] {
+    return this.getConnections(user).filter(c => c.status === 'accepted');
+  }
+
+  public getPendingConnections(user?: User | null): UserConnection[] {
+    return this.getConnections(user).filter(c => c.status === 'pending');
+  }
+
+  public getNetworkUsers(user?: User | null): User[] {
+    if (!user) return this.getUsers();
+    const accepted = this.getAcceptedConnections(user);
+    const allUsers = this.getUsers();
+    
+    // Connected user IDs
+    const connectedIds = new Set<string>();
+    const connectedEmails = new Set<string>();
+
+    accepted.forEach(c => {
+      if (c.requester_id === user.id) {
+        connectedIds.add(c.recipient_id);
+        if (c.recipient_email) connectedEmails.add(c.recipient_email.toLowerCase());
+      } else {
+        connectedIds.add(c.requester_id);
+        if (c.requester_email) connectedEmails.add(c.requester_email.toLowerCase());
+      }
+    });
+
+    // Also include co-members from existing shared projects
+    const userProjects = this.getProjects(user);
+    userProjects.forEach(p => {
+      p.members?.forEach(m => {
+        if (m.id !== user.id) {
+          connectedIds.add(m.id);
+          connectedEmails.add(m.email.toLowerCase());
+        }
+      });
+    });
+
+    const network = allUsers.filter(u => 
+      u.id === user.id || 
+      connectedIds.has(u.id) || 
+      connectedEmails.has(u.email.toLowerCase())
+    );
+
+    // Make sure currentUser is always included at the top
+    if (!network.some(u => u.id === user.id)) {
+      network.unshift(user);
+    }
+    return network;
+  }
+
+  public sendConnectionRequest(recipientId: string, currentUser: User): { success: boolean; error?: string } {
+    if (!currentUser) return { success: false, error: 'You must be logged in.' };
+    if (recipientId === currentUser.id) return { success: false, error: 'Cannot connect with yourself.' };
+
+    const recipient = this.getUserById(recipientId);
+    if (!recipient) return { success: false, error: 'User not found.' };
+
+    const all = this.getConnections();
+    const existing = all.find(c => 
+      (c.requester_id === currentUser.id && c.recipient_id === recipientId) ||
+      (c.requester_id === recipientId && c.recipient_id === currentUser.id)
+    );
+
+    if (existing) {
+      if (existing.status === 'accepted') {
+        return { success: false, error: 'You are already connected with this user.' };
+      }
+      if (existing.status === 'pending') {
+        if (existing.requester_id === currentUser.id) {
+          return { success: false, error: 'Connection request already sent and pending.' };
+        } else {
+          // If the other user already sent a request, auto-accept it!
+          this.acceptConnectionRequest(existing.id, currentUser);
+          return { success: true };
+        }
+      }
+    }
+
+    const newConnection: UserConnection = {
+      id: `conn-${Date.now()}`,
+      requester_id: currentUser.id,
+      requester_name: currentUser.name,
+      requester_avatar: currentUser.avatar_url,
+      requester_email: currentUser.email,
+      recipient_id: recipient.id,
+      recipient_name: recipient.name,
+      recipient_avatar: recipient.avatar_url,
+      recipient_email: recipient.email,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    all.unshift(newConnection);
+    localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(all));
+
+    if (supabase) {
+      safeSupabaseCall(supabase.from('user_connections').insert([{
+        id: newConnection.id,
+        requester_id: newConnection.requester_id,
+        recipient_id: newConnection.recipient_id,
+        status: newConnection.status,
+        created_at: newConnection.created_at,
+        updated_at: newConnection.updated_at,
+      }]));
+    }
+
+    // Send interactive notification to recipient
+    this.sendNotification({
+      user_id: recipient.id,
+      title: 'New Connection Request',
+      message: `${currentUser.name} wants to connect with you on Slow Spider.`,
+      type: 'info',
+      connection_id: newConnection.id,
+    });
+
+    this.notify();
+    return { success: true };
+  }
+
+  public acceptConnectionRequest(connectionId: string, currentUser: User): boolean {
+    const all = this.getConnections();
+    const idx = all.findIndex(c => c.id === connectionId);
+    if (idx === -1) return false;
+
+    const conn = all[idx];
+    conn.status = 'accepted';
+    conn.updated_at = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(all));
+
+    if (supabase) {
+      safeSupabaseCall(supabase.from('user_connections').update({ status: 'accepted', updated_at: conn.updated_at }).eq('id', connectionId));
+    }
+
+    // Notify requester
+    const otherUserId = conn.requester_id === currentUser.id ? conn.recipient_id : conn.requester_id;
+    this.sendNotification({
+      user_id: otherUserId,
+      title: 'Connection Accepted',
+      message: `${currentUser.name} accepted your connection request. You can now collaborate on projects!`,
+      type: 'success',
+    });
+
+    this.notify();
+    return true;
+  }
+
+  public declineConnectionRequest(connectionId: string, _currentUser: User): boolean {
+    const all = this.getConnections();
+    const idx = all.findIndex(c => c.id === connectionId);
+    if (idx === -1) return false;
+
+    all.splice(idx, 1);
+    localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(all));
+
+    if (supabase) {
+      safeSupabaseCall(supabase.from('user_connections').delete().eq('id', connectionId));
+    }
+
+    this.notify();
+    return true;
+  }
+
+  public removeConnection(connectionId: string, currentUser: User): boolean {
+    return this.declineConnectionRequest(connectionId, currentUser);
+  }
+
+  public searchUsersToConnect(query: string, currentUser?: User | null): { user: User; connectionStatus: 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'self' }[] {
+    const normalizedQuery = query.toLowerCase().trim();
+    if (!normalizedQuery) return [];
+
+    const allUsers = this.getUsers();
+    const connections = currentUser ? this.getConnections(currentUser) : [];
+
+    return allUsers
+      .filter(u => 
+        u.name.toLowerCase().includes(normalizedQuery) || 
+        u.email.toLowerCase().includes(normalizedQuery)
+      )
+      .map(u => {
+        if (currentUser && u.id === currentUser.id) {
+          return { user: u, connectionStatus: 'self' as const };
+        }
+
+        const conn = connections.find(c => 
+          (c.requester_id === u.id || c.recipient_id === u.id) ||
+          (c.requester_email?.toLowerCase() === u.email.toLowerCase() || c.recipient_email?.toLowerCase() === u.email.toLowerCase())
+        );
+
+        if (!conn) return { user: u, connectionStatus: 'none' as const };
+        if (conn.status === 'accepted') return { user: u, connectionStatus: 'connected' as const };
+        if (conn.status === 'pending') {
+          if (currentUser && conn.requester_id === currentUser.id) return { user: u, connectionStatus: 'pending_sent' as const };
+          return { user: u, connectionStatus: 'pending_received' as const };
+        }
+        return { user: u, connectionStatus: 'none' as const };
+      });
+  }
+
   // --- TASKS (USER SCOPED) ---
   public getTasks(projectId?: string, user?: User | null): Task[] {
     const data = localStorage.getItem(STORAGE_KEYS.TASKS);
@@ -1236,7 +1450,7 @@ class DataService {
     if (!item) return null;
     const project = this.createProject({
       name: item.title,
-      description: item.content,
+      description: item.content || '',
       owner_id: user?.id || '',
       status: 'active',
       progress: 0,

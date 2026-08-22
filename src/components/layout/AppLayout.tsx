@@ -6,6 +6,7 @@ import { NotificationDrawer } from '../common/NotificationDrawer';
 import { FloatingInbox } from '../inbox/FloatingInbox';
 import { NewProjectModal } from '../projects/NewProjectModal';
 import { UserProfileModal } from '../auth/UserProfileModal';
+import { NetworkModal } from '../network/NetworkModal';
 import { dataService } from '../../services/dataService';
 import { Project } from '../../types/database';
 import { Inbox as InboxIcon } from 'lucide-react';
@@ -38,10 +39,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [isInboxOpen, setIsInboxOpen] = useState(false);
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNetworkOpen, setIsNetworkOpen] = useState(false);
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [inboxCount, setInboxCount] = useState(0);
   const [trashCount, setTrashCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   // Sync theme with document.documentElement and body
   useEffect(() => {
@@ -65,6 +68,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       setUnreadCount(dataService.getNotifications(user).filter(n => !n.read).length);
       setInboxCount(dataService.getInboxItems(user).length);
       setTrashCount(dataService.getTrashItems(user).length);
+      if (user) {
+        const conns = dataService.getConnections(user);
+        setPendingRequestsCount(conns.filter(c => c.status === 'pending' && (c.recipient_id === user.id || (c.recipient_email && c.recipient_email.toLowerCase() === user.email.toLowerCase()))).length);
+      } else {
+        setPendingRequestsCount(0);
+      }
     };
     update();
     return dataService.subscribe(update);
@@ -117,8 +126,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onOpenInbox={() => setIsInboxOpen(true)}
           onOpenNewProject={() => setIsNewProjectOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenNetwork={() => setIsNetworkOpen(true)}
           unreadCount={unreadCount}
           inboxCount={inboxCount}
+          pendingRequestsCount={pendingRequestsCount}
         />
 
         {/* Dynamic Page Content */}
@@ -156,6 +167,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <NotificationDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        onOpenNetwork={() => setIsNetworkOpen(true)}
       />
 
       {/* Floating Inbox Overlay Modal */}
@@ -169,13 +181,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <NewProjectModal
         isOpen={isNewProjectOpen}
         onClose={() => setIsNewProjectOpen(false)}
-        onCreated={handleCreatedProject}
+        onProjectCreated={handleCreatedProject}
+        onOpenNetwork={() => setIsNetworkOpen(true)}
       />
 
       {/* User Profile Modal */}
       <UserProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
+        onOpenNetwork={() => setIsNetworkOpen(true)}
+      />
+
+      {/* Network & Colleagues Modal */}
+      <NetworkModal
+        isOpen={isNetworkOpen}
+        onClose={() => setIsNetworkOpen(false)}
       />
     </div>
   );

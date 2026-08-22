@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Plus, Inbox as InboxIcon } from 'lucide-react';
+import { Search, Bell, Plus, Inbox as InboxIcon, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -10,8 +10,10 @@ interface NavbarProps {
   onOpenInbox: () => void;
   onOpenNewProject: () => void;
   onOpenProfile: () => void;
+  onOpenNetwork?: () => void;
   unreadCount?: number;
   inboxCount?: number;
+  pendingRequestsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,8 +22,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenInbox,
   onOpenNewProject,
   onOpenProfile,
+  onOpenNetwork,
   unreadCount = 0,
   inboxCount = 0,
+  pendingRequestsCount = 0,
 }) => {
   const { user } = useAuth();
 
@@ -45,6 +49,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Actions */}
       <div className="flex items-center gap-3">
+        {/* Network quick trigger */}
+        {onOpenNetwork && (
+          <button
+            onClick={onOpenNetwork}
+            className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
+            title="My Network (Colleagues & Connections)"
+          >
+            <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
+            <span>Network</span>
+            {pendingRequestsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold animate-pulse">
+                {pendingRequestsCount}
+              </span>
+            )}
+          </button>
+        )}
+
         {/* Floating Inbox quick trigger */}
         <button
           onClick={onOpenInbox}

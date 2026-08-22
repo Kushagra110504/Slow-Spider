@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Mail, Check } from 'lucide-react';
+import { LogOut, Mail, Check, Users } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
@@ -9,9 +9,10 @@ import { formatDate } from '../../lib/utils';
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenNetwork?: () => void;
 }
 
-export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
+export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, onOpenNetwork }) => {
   const { user, logout, updateProfile } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
@@ -48,15 +49,30 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     >
       <form onSubmit={handleSave} className="space-y-4">
         {/* User Badge Banner */}
-        <div className="p-4 rounded-2xl bg-vault-cardHover border border-vault-border flex items-center gap-4">
-          <Avatar user={{ name, avatar_url: avatarUrl }} size="lg" />
-          <div>
-            <h4 className="text-sm font-bold text-vault-textPrimary">{user.name}</h4>
-            <p className="text-xs text-vault-textMuted flex items-center gap-1.5 mt-0.5">
-              <Mail className="w-3 h-3" />
-              {user.email}
-            </p>
+        <div className="p-4 rounded-2xl bg-vault-cardHover border border-vault-border flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Avatar user={{ name, avatar_url: avatarUrl }} size="lg" />
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold text-vault-textPrimary truncate">{user.name}</h4>
+              <p className="text-xs text-vault-textMuted flex items-center gap-1.5 mt-0.5 truncate font-mono">
+                <Mail className="w-3 h-3 shrink-0" />
+                <span>{user.email}</span>
+              </p>
+            </div>
           </div>
+          {onOpenNetwork && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenNetwork();
+              }}
+              className="px-3 py-1.5 rounded-xl bg-[#00E575]/15 border border-[#00E575]/40 text-[#045E33] dark:text-[#00E575] text-xs font-bold hover:bg-[#00E575]/25 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>My Network</span>
+            </button>
+          )}
         </div>
 
         {/* Edit Name */}
