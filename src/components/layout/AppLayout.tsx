@@ -122,7 +122,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full md:pl-64 transition-all">
         {/* Top Navbar */}
         <Navbar
           onOpenSearch={() => setIsSearchOpen(true)}
@@ -138,7 +138,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 px-3.5 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>
@@ -146,11 +146,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Floating Inbox Quick Button in bottom right corner */}
       <button
         onClick={() => setIsInboxOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#00E575] hover:bg-[#00D069] text-[#042B16] font-bold shadow-[0_0_20px_rgba(0,229,117,0.45)] hover:shadow-[0_0_25px_rgba(0,229,117,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#00C966]/40"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#00E575] hover:bg-[#00D069] text-[#042B16] font-bold shadow-[0_0_20px_rgba(0,229,117,0.45)] hover:shadow-[0_0_25px_rgba(0,229,117,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#00C966]/40"
         title="Floating Inbox (Shortcut: I)"
       >
         <InboxIcon className="w-4 h-4" />
-        <span className="text-xs">Quick Capture</span>
+        <span className="text-xs hidden sm:inline">Quick Capture</span>
         {inboxCount > 0 && (
           <span className="w-5 h-5 rounded-full bg-[#042B16] text-[#00E575] text-[10px] flex items-center justify-center font-black">
             {inboxCount}

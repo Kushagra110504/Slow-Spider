@@ -32,23 +32,33 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user } = useAuth();
 
   return (
-    <header className="h-16 border-b border-vault-border bg-vault-surface/90 backdrop-blur-md px-3 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Left: Mobile menu toggle + Search bar */}
-      <div className="flex items-center gap-2 flex-1 max-w-md mr-2">
+    <header className="h-16 border-b border-vault-border bg-vault-surface/90 backdrop-blur-md px-3 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors w-full">
+      {/* Left: Mobile hamburger toggle & Brand on mobile */}
+      <div className="flex items-center gap-2.5 flex-1 min-w-0 mr-2">
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="md:hidden p-2 rounded-xl text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover border border-vault-border shrink-0 cursor-pointer"
-            title="Open Navigation"
+            className="md:hidden p-2 rounded-xl text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover border border-vault-border shrink-0 cursor-pointer active:scale-95 transition-all"
+            title="Open Navigation Menu"
+            aria-label="Open Navigation Menu"
           >
             <Menu className="w-4 h-4" />
           </button>
         )}
 
+        {/* Mobile Brand indicator (when sidebar is hidden) */}
+        <div className="flex md:hidden items-center gap-2 shrink-0 select-none">
+          <img
+            src="/logo.png"
+            alt="Slow Spider"
+            className="w-6 h-6 object-contain logo-stroke-outline"
+          />
+        </div>
+
         {/* Search trigger button */}
         <button
           onClick={onOpenSearch}
-          className="flex-1 flex items-center justify-between px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted text-xs hover:border-vault-borderLight hover:text-vault-textPrimary transition-all cursor-pointer shadow-sm min-w-0"
+          className="flex-1 max-w-sm flex items-center justify-between px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted text-xs hover:border-vault-borderLight hover:text-vault-textPrimary transition-all cursor-pointer shadow-xs min-w-0"
         >
           <div className="flex items-center gap-2 truncate">
             <Search className="w-3.5 h-3.5 shrink-0" />
@@ -62,16 +72,16 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-        {/* Network quick trigger */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Network quick trigger (visible on sm+) */}
         {onOpenNetwork && (
           <button
             onClick={onOpenNetwork}
-            className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
+            className="hidden sm:flex relative items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
             title="My Network"
           >
             <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-            <span className="hidden sm:inline">Network</span>
+            <span className="hidden md:inline">Network</span>
             {pendingRequestsCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold animate-pulse">
                 {pendingRequestsCount}
@@ -80,14 +90,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         )}
 
-        {/* Floating Inbox quick trigger */}
+        {/* Floating Inbox quick trigger (visible on sm+) */}
         <button
           onClick={onOpenInbox}
-          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
+          className="hidden sm:flex relative items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
           title="Floating Inbox"
         >
           <InboxIcon className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-          <span className="hidden sm:inline">Inbox</span>
+          <span className="hidden md:inline">Inbox</span>
           {inboxCount > 0 && (
             <span className="px-1.5 py-0.2 rounded-full bg-[#00E575]/20 text-[#045E33] dark:text-[#00E575] text-[10px] font-bold">
               {inboxCount}
@@ -98,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Notifications */}
         <button
           onClick={onOpenNotifications}
-          className="relative p-2 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted hover:text-vault-textPrimary hover:border-vault-borderLight transition-colors cursor-pointer"
+          className="relative p-2 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted hover:text-vault-textPrimary hover:border-vault-borderLight transition-colors cursor-pointer active:scale-95"
           title="Notifications"
         >
           <Bell className="w-4 h-4" />

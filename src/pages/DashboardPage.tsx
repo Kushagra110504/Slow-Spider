@@ -147,10 +147,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 sm:space-y-6 pb-12">
       {/* Top 3 Metric Highlight Cards */}
       {projects.length === 0 ? (
-        <Card className="bg-vault-card border-vault-border p-6 text-center space-y-3">
+        <Card className="bg-vault-card border-vault-border p-5 sm:p-6 text-center space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
             <FolderPlus className="w-6 h-6" />
           </div>
@@ -162,7 +162,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
           {projects.slice(0, 3).map((proj) => {
             const badge = getStatusBadge(proj.status);
             return (
@@ -170,7 +170,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 key={proj.id}
                 hoverEffect
                 onClick={() => onNavigate('project-details', proj.id)}
-                className="cursor-pointer group relative overflow-hidden bg-vault-card border-vault-border"
+                className="cursor-pointer group relative overflow-hidden bg-vault-card border-vault-border p-4 sm:p-5"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -206,18 +206,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       )}
 
       {/* Middle Section: Active Tasks & Upcoming Deadlines */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* Active Tasks Widget (7 Cols) */}
-        <Card className="lg:col-span-7 flex flex-col justify-between bg-vault-card border-vault-border">
+        <Card className="lg:col-span-7 flex flex-col justify-between bg-vault-card border-vault-border p-4 sm:p-5">
           <div>
             {/* Header & Tabs */}
-            <div className="flex items-center justify-between pb-4 border-b border-vault-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 sm:pb-4 border-b border-vault-border gap-3">
               <div>
                 <h2 className="text-base font-bold text-vault-textPrimary">Active Tasks</h2>
                 <p className="text-xs text-vault-textMuted mt-0.5">Focused work queue for today</p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <div className="p-1 rounded-xl bg-vault-cardHover border border-vault-border flex items-center gap-1">
                   <button
                     onClick={() => setTaskTab('overview')}
@@ -395,14 +395,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <p className="text-xs text-vault-textMuted mt-0.5">Workspace throughput and completion</p>
             </div>
 
-            <div className="mt-5 flex items-center gap-6">
+            <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               {/* Donut Gauge */}
               <div className="shrink-0">
-                <CircularGauge percentage={avgProgress} size={88} strokeWidth={8} color="#10B981" />
+                <CircularGauge percentage={avgProgress} size={80} strokeWidth={8} color="#10B981" />
               </div>
 
               {/* Throughput Breakdown Bars */}
-              <div className="flex-1 space-y-3.5">
+              <div className="flex-1 w-full space-y-3.5">
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-vault-textSecondary mb-1">
                     <span>Average Project Delivery</span>

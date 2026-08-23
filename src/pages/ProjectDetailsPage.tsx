@@ -168,10 +168,10 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
   return (
     <div className="space-y-6 pb-16">
       {/* Top Breadcrumb & Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <button
           onClick={() => onNavigate('projects')}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-vault-textMuted hover:text-vault-textPrimary transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-vault-textMuted hover:text-vault-textPrimary transition-colors cursor-pointer py-1"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Projects</span>
@@ -186,7 +186,7 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
             title="Archive project to Cold Store"
           >
             <Snowflake className="w-3.5 h-3.5 mr-1" />
-            Archive
+            <span>Archive</span>
           </Button>
 
           <Button
@@ -197,17 +197,17 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
             title="Move project to 90-day Trash"
           >
             <Trash2 className="w-3.5 h-3.5 mr-1" />
-            Trash
+            <span>Trash</span>
           </Button>
         </div>
       </div>
 
       {/* Main Project Details Header Card matching Screen 2 */}
-      <Card className="bg-vault-card border-vault-border p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="bg-vault-card border-vault-border p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-vault-textPrimary tracking-tight">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-vault-textPrimary tracking-tight">
                 {project.name}
               </h1>
               <Badge variant="blue" dot>
@@ -220,17 +220,17 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
           </div>
 
           <div className="text-left md:text-right shrink-0">
-            <span className="text-xs font-semibold text-vault-textMuted uppercase tracking-wider block">
+            <span className="text-[11px] sm:text-xs font-semibold text-vault-textMuted uppercase tracking-wider block">
               Overall progress
             </span>
-            <span className="text-4xl font-extrabold text-vault-textPrimary tracking-tight">
+            <span className="text-3xl sm:text-4xl font-extrabold text-vault-textPrimary tracking-tight">
               {completedPercent}%
             </span>
           </div>
         </div>
 
         {/* Segmented Progress Bar matching Screen 2 */}
-        <div className="mt-6">
+        <div className="mt-5 sm:mt-6">
           <SegmentedProgressBar
             completedPercent={completedPercent}
             inProgressPercent={inProgressPercent}
@@ -238,7 +238,7 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
         </div>
 
         {/* Team Collaboration Bar */}
-        <div className="mt-5 pt-4 border-t border-vault-border flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-4 sm:mt-5 pt-3.5 sm:pt-4 border-t border-vault-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-vault-textMuted uppercase tracking-wider">
               Project Team ({project.members?.length || 1})
@@ -259,7 +259,7 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
             variant="secondary"
             size="sm"
             onClick={() => setShowInviteModal(true)}
-            className="text-[#00C966] dark:text-[#00E575] hover:text-[#00D069] border-[#00E575]/40 hover:bg-[#00E575]/10 text-xs font-semibold"
+            className="text-[#00C966] dark:text-[#00E575] hover:text-[#00D069] border-[#00E575]/40 hover:bg-[#00E575]/10 text-xs font-semibold self-start sm:self-auto"
           >
             <UserPlus className="w-3.5 h-3.5 mr-1.5" />
             Invite Member

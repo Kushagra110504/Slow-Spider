@@ -92,7 +92,7 @@ export const CommandSearchModal: React.FC<CommandSearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 p-3 sm:p-4">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/80 backdrop-blur-sm animate-fade-in"
@@ -102,11 +102,11 @@ export const CommandSearchModal: React.FC<CommandSearchModalProps> = ({
       {/* Modal Dialog */}
       <div className="relative w-full max-w-xl bg-vault-surface border border-vault-border rounded-2xl shadow-2xl overflow-hidden z-10 animate-slide-up text-vault-textPrimary">
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-vault-border gap-3">
-          <Search className="w-5 h-5 text-vault-textMuted shrink-0" />
+        <div className="flex items-center px-3.5 sm:px-4 py-3 sm:py-3.5 border-b border-vault-border gap-2.5 sm:gap-3">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-vault-textMuted shrink-0" />
           <input
             type="text"
-            placeholder="Type a command or search projects, tasks, milestones..."
+            placeholder="Type a command or search..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus

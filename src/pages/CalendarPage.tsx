@@ -211,14 +211,14 @@ export const CalendarPage: React.FC = () => {
       </div>
 
       {/* Main Grid: Calendar Matrix & Agenda */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Left Section: Month Matrix (8 Cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <Card className="p-4 sm:p-6 bg-vault-card border-vault-border">
-            <div className="overflow-x-auto pb-2">
-              <div className="min-w-[460px]">
+          <Card className="p-3.5 sm:p-6 bg-vault-card border-vault-border">
+            <div className="overflow-x-auto pb-2 -mx-1 px-1">
+              <div className="min-w-[420px] sm:min-w-[460px]">
                 {/* Weekdays header */}
-                <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-3">
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-2.5 sm:mb-3">
                   <span>Mon</span>
                   <span>Tue</span>
                   <span>Wed</span>
@@ -229,7 +229,7 @@ export const CalendarPage: React.FC = () => {
                 </div>
 
                 {/* 35-Day Matrix */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
               {[...Array(35)].map((_, idx) => {
                 const dayNum = idx - firstDayOfWeek + 1;
                 const isCurrentMonth = dayNum > 0 && dayNum <= daysInMonth;
@@ -241,7 +241,7 @@ export const CalendarPage: React.FC = () => {
                   <div
                     key={idx}
                     onClick={() => isCurrentMonth && setSelectedDay(dayNum)}
-                    className={`h-20 p-2 rounded-2xl border transition-all flex flex-col justify-between group relative ${
+                    className={`h-16 sm:h-20 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between group relative ${
                       !isCurrentMonth
                         ? 'bg-vault-card/20 border-vault-border/30 text-vault-textMuted/30 cursor-default'
                         : isSelected
@@ -273,7 +273,7 @@ export const CalendarPage: React.FC = () => {
                         {dayEvents.map((ev) => (
                           <span
                             key={ev.id}
-                            className={`w-2 h-2 rounded-full ${getCategoryDot(ev.category)}`}
+                            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getCategoryDot(ev.category)}`}
                             title={`${ev.title} (${ev.project})`}
                           />
                         ))}
@@ -288,42 +288,42 @@ export const CalendarPage: React.FC = () => {
       </Card>
 
           {/* Category Filters Toggle Panel */}
-          <Card className="p-5 bg-vault-card border-vault-border">
-            <h3 className="text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-4">
+          <Card className="p-4 sm:p-5 bg-vault-card border-vault-border">
+            <h3 className="text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-3 sm:mb-4">
               Category Filters
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
               {/* Critical */}
-              <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
                   <span className="text-xs font-semibold text-vault-textPrimary">Critical</span>
                 </div>
                 <Toggle checked={filterCritical} onChange={setFilterCritical} />
               </div>
 
               {/* Approaching */}
-              <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                   <span className="text-xs font-semibold text-vault-textPrimary">Approaching</span>
                 </div>
                 <Toggle checked={filterApproaching} onChange={setFilterApproaching} />
               </div>
 
               {/* Milestones */}
-              <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
                   <span className="text-xs font-semibold text-vault-textPrimary">Milestones</span>
                 </div>
                 <Toggle checked={filterMilestones} onChange={setFilterMilestones} />
               </div>
 
               {/* General */}
-              <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
                   <span className="text-xs font-semibold text-vault-textPrimary">General</span>
                 </div>
                 <Toggle checked={filterGeneral} onChange={setFilterGeneral} />
@@ -334,7 +334,7 @@ export const CalendarPage: React.FC = () => {
 
         {/* Right Section: Selected Day Agenda (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
-          <Card className="p-6 flex flex-col justify-between h-full bg-vault-card border-vault-border">
+          <Card className="p-4 sm:p-6 flex flex-col justify-between h-full bg-vault-card border-vault-border">
             <div>
               {/* Header */}
               <div className="pb-4 border-b border-vault-border">

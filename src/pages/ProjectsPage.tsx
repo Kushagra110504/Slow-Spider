@@ -130,46 +130,49 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center gap-3 bg-vault-card p-3 rounded-2xl border border-vault-border">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 bg-vault-card p-3 rounded-2xl border border-vault-border">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 text-vault-textMuted absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search projects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] transition-colors"
+            className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-9 pr-3.5 py-2 sm:py-1.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] transition-colors"
           />
         </div>
 
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-vault-cardHover border border-vault-border rounded-xl px-3 py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575] transition-colors cursor-pointer"
-        >
-          <option value="all">Status: All</option>
-          <option value="active">Active</option>
-          <option value="at_risk">At risk</option>
-          <option value="overdue">Overdue</option>
-          <option value="completed">Completed</option>
-        </select>
+        {/* Dropdowns */}
+        <div className="grid grid-cols-2 sm:flex items-center gap-2">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full sm:w-auto bg-vault-cardHover border border-vault-border rounded-xl px-3 py-2 sm:py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575] transition-colors cursor-pointer"
+          >
+            <option value="all">Status: All</option>
+            <option value="active">Active</option>
+            <option value="at_risk">At risk</option>
+            <option value="overdue">Overdue</option>
+            <option value="completed">Completed</option>
+          </select>
 
-        {/* Team Filter */}
-        <select
-          value={teamFilter}
-          onChange={(e) => setTeamFilter(e.target.value)}
-          className="bg-vault-cardHover border border-vault-border rounded-xl px-3 py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575] transition-colors cursor-pointer"
-        >
-          <option value="all">Team: All</option>
-          <option value="Design team">Design team</option>
-          <option value="Product team">Product team</option>
-          <option value="Engineering team">Engineering team</option>
-          <option value="Growth team">Growth team</option>
-          <option value="Marketing team">Marketing team</option>
-          <option value="Ops team">Ops team</option>
-        </select>
+          {/* Team Filter */}
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="w-full sm:w-auto bg-vault-cardHover border border-vault-border rounded-xl px-3 py-2 sm:py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575] transition-colors cursor-pointer"
+          >
+            <option value="all">Team: All</option>
+            <option value="Design team">Design team</option>
+            <option value="Product team">Product team</option>
+            <option value="Engineering team">Engineering team</option>
+            <option value="Growth team">Growth team</option>
+            <option value="Marketing team">Marketing team</option>
+            <option value="Ops team">Ops team</option>
+          </select>
+        </div>
       </div>
 
       {/* Projects List / Grid View */}
@@ -184,13 +187,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
               key={project.id}
               hoverEffect
               onClick={() => onNavigate('project-details', project.id)}
-              className="p-5 cursor-pointer group relative bg-vault-card border-vault-border"
+              className="p-4 sm:p-5 cursor-pointer group relative bg-vault-card border-vault-border"
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
                 {/* Left Info */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-base font-bold text-vault-textPrimary group-hover:text-[#00C966] dark:group-hover:text-[#00E575] transition-colors truncate">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-bold text-vault-textPrimary group-hover:text-[#00C966] dark:group-hover:text-[#00E575] transition-colors truncate">
                       {project.name}
                     </h3>
                     {getStatusBadge(project.status)}
@@ -210,7 +213,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
               </div>
 
               {/* Progress Bar & Percentage */}
-              <div className="mt-4 space-y-1.5">
+              <div className="mt-3.5 sm:mt-4 space-y-1.5">
                 <div className="flex justify-between items-center text-xs font-medium text-vault-textMuted">
                   <span>{project.progress}% complete</span>
                 </div>
@@ -223,8 +226,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
               </div>
 
               {/* Bottom Meta Bar: Tags & Members */}
-              <div className="mt-4 pt-3 border-t border-vault-border flex flex-wrap items-center justify-between gap-3 text-xs text-vault-textMuted">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="mt-3.5 sm:mt-4 pt-3 border-t border-vault-border flex flex-wrap items-center justify-between gap-2.5 text-xs text-vault-textMuted">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <span className="font-semibold text-vault-textSecondary uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-vault-cardHover border border-vault-border">
                     {project.team_category}
                   </span>
@@ -238,23 +241,23 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                   ))}
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   {project.members && project.members.length > 0 && (
                     <AvatarStack users={project.members} size="xs" max={3} />
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleArchive(e, project.id)}
-                      className="p-1.5 rounded-lg hover:bg-vault-cardHover text-vault-textMuted hover:text-cyan-500 transition-colors"
-                      title="Archive to Cold Store"
+                      className="p-1.5 rounded-lg hover:bg-vault-cardHover text-vault-textMuted hover:text-cyan-500 transition-colors cursor-pointer"
+                      title="Archive Project"
                     >
                       <Snowflake className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => handleTrash(e, project.id)}
-                      className="p-1.5 rounded-lg hover:bg-vault-cardHover text-vault-textMuted hover:text-red-400 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-vault-cardHover text-vault-textMuted hover:text-red-500 transition-colors cursor-pointer"
                       title="Move to Trash"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -266,34 +269,30 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
               hoverEffect
               onClick={() => onNavigate('project-details', project.id)}
-              className="p-5 cursor-pointer group flex flex-col justify-between relative bg-vault-card border-vault-border"
+              className="p-4 sm:p-5 cursor-pointer group relative bg-vault-card border-vault-border flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-[10px] font-semibold text-vault-textSecondary uppercase tracking-wider px-2 py-0.5 rounded bg-vault-cardHover border border-vault-border">
-                    {project.team_category}
-                  </span>
+                  <h3 className="text-sm font-bold text-vault-textPrimary group-hover:text-[#00C966] dark:group-hover:text-[#00E575] transition-colors truncate">
+                    {project.name}
+                  </h3>
                   {getStatusBadge(project.status)}
                 </div>
 
-                <h3 className="text-base font-bold text-vault-textPrimary group-hover:text-[#00C966] dark:group-hover:text-[#00E575] transition-colors mt-3">
-                  {project.name}
-                </h3>
-                <p className="text-xs text-vault-textMuted mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-vault-textMuted mt-2 line-clamp-2 leading-relaxed">
                   {project.description}
                 </p>
               </div>
 
-              <div className="mt-6 space-y-4">
-                {/* Progress */}
-                <div>
-                  <div className="flex justify-between items-center text-xs font-medium text-vault-textMuted mb-1.5">
+              <div className="mt-4 pt-3 border-t border-vault-border space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-[11px] font-medium text-vault-textMuted">
                     <span>Progress</span>
                     <span className="font-bold text-vault-textPrimary">{project.progress}%</span>
                   </div>
@@ -305,12 +304,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                   />
                 </div>
 
-                {/* Footer: Due date + avatars */}
-                <div className="pt-3 border-t border-vault-border flex items-center justify-between text-xs text-vault-textMuted">
-                  <span className="text-[11px] font-medium flex items-center gap-1.5">
-                    <CalendarIcon className="w-3.5 h-3.5 text-vault-textMuted" />
-                    {formatDate(project.due_date)}
-                  </span>
+                <div className="flex items-center justify-between text-xs text-vault-textMuted">
+                  <span className="text-[11px]">Due {formatDate(project.due_date)}</span>
                   {project.members && project.members.length > 0 && (
                     <AvatarStack users={project.members} size="xs" max={3} />
                   )}

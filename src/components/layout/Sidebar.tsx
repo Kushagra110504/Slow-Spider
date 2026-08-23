@@ -45,67 +45,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'trash', label: 'Trash', icon: Trash2, badge: trashCount > 0 ? trashCount : undefined },
   ];
 
-  return (
+  const renderNavContent = (isMobile: boolean = false) => (
     <>
-      {/* Mobile Backdrop Overlay */}
-      {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden animate-fade-in"
-          onClick={onCloseMobile}
-        />
-      )}
-
-      <aside 
-        className={cn(
-          "w-64 bg-vault-sidebar border-r border-vault-border flex flex-col justify-between h-screen shrink-0 select-none z-50 transition-transform duration-300 ease-in-out",
-          "fixed inset-y-0 left-0 md:sticky md:top-0 md:translate-x-0",
-          isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
-        )}
-      >
-        {/* Top Header / Workspace */}
-        <div>
-          <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img
-                src="/logo.png"
-                alt="Slow Spider"
-                className="w-8 h-8 object-contain logo-stroke-outline shrink-0"
-              />
-              <div>
-                <h1 className="text-sm font-bold text-vault-textPrimary tracking-tight">
-                  SLOW SPIDER
-                </h1>
-              </div>
+      {/* Top Header / Workspace */}
+      <div>
+        <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo.png"
+              alt="Slow Spider"
+              className="w-8 h-8 object-contain logo-stroke-outline shrink-0"
+            />
+            <div>
+              <h1 className="text-sm font-bold text-vault-textPrimary tracking-tight">
+                SLOW SPIDER
+              </h1>
             </div>
-
-            {/* Mobile Close Button */}
-            {onCloseMobile && (
-              <button
-                onClick={onCloseMobile}
-                className="md:hidden p-1.5 rounded-lg text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover transition-colors cursor-pointer"
-                title="Close Navigation"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-3 space-y-1.5 mt-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentTab === item.id || (item.id === 'projects' && currentTab === 'project-details');
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onSelectTab(item.id as NavTab);
-                    if (onCloseMobile) onCloseMobile();
-                  }}
-                  className={cn(
-                    'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group cursor-pointer text-left',
-                    isActive
-                      ? 'bg-[#00E575]/10 text-vault-textPrimary shadow-sm border border-[#00E575]/30'
+          {/* Mobile Close Button */}
+          {isMobile && onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="p-1.5 rounded-lg text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover transition-colors cursor-pointer"
+              title="Close Navigation"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="p-3 space-y-1.5 mt-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id || (item.id === 'projects' && currentTab === 'project-details');
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onSelectTab(item.id as NavTab);
+                  if (isMobile && onCloseMobile) onCloseMobile();
+                }}
+                className={cn(
+                  'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group cursor-pointer text-left',
+                  isActive
+                    ? 'bg-[#00E575]/10 text-vault-textPrimary shadow-sm border border-[#00E575]/30'
                     : 'text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover/60'
                 )}
               >
@@ -139,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>60-day preservation</span>
             </div>
             <p className="text-vault-textMuted leading-relaxed text-[11px]">
-              Projects inactive for 60 days are preserved here until restored. Notes, history, and progress thaw back into your workspace.
+              Projects inactive for 60 days are preserved here until restored.
             </p>
           </div>
         ) : currentTab === 'trash' ? (
@@ -149,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>90-day retention</span>
             </div>
             <p className="text-vault-textMuted leading-relaxed text-[11px]">
-              Items are permanently deleted automatically once the 90-day countdown ends.
+              Items are permanently deleted automatically once countdown ends.
             </p>
           </div>
         ) : (
@@ -183,7 +168,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Toggle checked={isDarkMode} onChange={onToggleDarkMode} />
         </div>
       </div>
-    </aside>
-  </>
+    </>
+  );
+
+  return (
+    <>
+      {/* 1. Desktop Fixed Sidebar (Only rendered/visible on md: and above) */}
+      <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:left-0 bg-vault-sidebar border-r border-vault-border z-30 justify-between select-none h-screen">
+        {renderNavContent(false)}
+      </aside>
+
+      {/* 2. Mobile Off-Canvas Drawer (Only active when isMobileOpen on < md viewports) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity animate-fade-in"
+            onClick={onCloseMobile}
+          />
+
+          {/* Drawer panel */}
+          <aside className="relative z-10 w-72 max-w-[80vw] h-full bg-vault-sidebar border-r border-vault-border flex flex-col justify-between select-none shadow-2xl animate-slide-up">
+            {renderNavContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

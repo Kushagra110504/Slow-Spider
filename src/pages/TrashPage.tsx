@@ -61,31 +61,31 @@ export const TrashPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 sm:space-y-6 pb-16">
       {/* Top Header & Remaining Counter matching Screen 6 */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-vault-textPrimary tracking-tight">Trash</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-vault-textPrimary tracking-tight">Trash</h1>
           <p className="text-xs text-vault-textMuted mt-1 max-w-xl leading-relaxed">
             Review deleted projects, tasks, and milestones before they are permanently removed.
           </p>
         </div>
 
         {/* Remaining Deletion Counter */}
-        <div className="p-5 rounded-2xl bg-vault-card border border-vault-border shadow-card min-w-[200px] text-right">
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-vault-card border border-vault-border shadow-card w-full sm:w-auto text-left sm:text-right">
           <span className="text-[10px] font-bold text-vault-textMuted block uppercase tracking-widest">
             Remaining before deletion
           </span>
-          <span className="text-3xl font-black text-vault-textPrimary tracking-tight mt-1 block">
+          <span className="text-2xl sm:text-3xl font-black text-vault-textPrimary tracking-tight mt-0.5 sm:mt-1 block">
             {trashItems.length} items
           </span>
         </div>
       </div>
 
       {/* Search & Action Bar matching Screen 6 */}
-      <div className="flex flex-wrap items-center gap-3 bg-vault-card p-3 rounded-2xl border border-vault-border">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 bg-vault-card p-3 rounded-2xl border border-vault-border">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 text-vault-textMuted absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -96,33 +96,38 @@ export const TrashPage: React.FC = () => {
           />
         </div>
 
-        {/* Type Filter */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-vault-cardHover border border-vault-border">
-          {(['All', 'Project', 'Task', 'Milestone'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                typeFilter === t
-                  ? 'bg-vault-card text-vault-textPrimary shadow-sm border border-vault-border'
-                  : 'text-vault-textMuted hover:text-vault-textPrimary'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {/* Filters and Actions container */}
+        <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
+          {/* Type Filter */}
+          <div className="grid grid-cols-4 sm:flex items-center gap-1 p-1 rounded-xl bg-vault-cardHover border border-vault-border flex-1 sm:flex-initial">
+            {(['All', 'Project', 'Task', 'Milestone'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setTypeFilter(type)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                  typeFilter === type
+                    ? 'bg-vault-card text-vault-textPrimary shadow-sm border border-vault-border'
+                    : 'text-vault-textMuted hover:text-vault-textPrimary'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
 
-        {/* Restore All Button */}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleRestoreAll}
-          disabled={trashItems.length === 0}
-        >
-          <RotateCcw className="w-3.5 h-3.5 mr-1" />
-          Restore all
-        </Button>
+          {/* Restore All Button */}
+          {trashItems.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleRestoreAll}
+              className="text-emerald-500 hover:text-emerald-400 border-emerald-500/30"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Restore All</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Deleted Items List matching Screen 6 */}

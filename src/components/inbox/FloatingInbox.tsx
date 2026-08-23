@@ -103,16 +103,16 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
       />
 
       {/* Floating Modal */}
-      <div className="relative w-full max-w-2xl bg-vault-surface border border-vault-border rounded-3xl p-6 shadow-2xl z-10 animate-slide-up flex flex-col max-h-[85vh] text-vault-textPrimary">
+      <div className="relative w-full max-w-2xl bg-vault-surface border border-vault-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl z-10 animate-slide-up flex flex-col max-h-[85vh] text-vault-textPrimary">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-vault-border">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
-              <Inbox className="w-5 h-5" />
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-vault-border">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shrink-0">
+              <Inbox className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-vault-textPrimary">Floating Inbox</h2>
-              <p className="text-xs text-vault-textMuted">Rapid capture space for thoughts, tasks, and ideas</p>
+              <h2 className="text-sm sm:text-base font-bold text-vault-textPrimary">Floating Inbox</h2>
+              <p className="text-[11px] sm:text-xs text-vault-textMuted">Rapid capture space for thoughts, tasks, and ideas</p>
             </div>
           </div>
 
@@ -125,15 +125,15 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
         </div>
 
         {/* Capture Input Box */}
-        <form onSubmit={handleCapture} className="mt-4 p-4 rounded-2xl bg-vault-cardHover border border-vault-border space-y-3">
+        <form onSubmit={handleCapture} className="mt-3.5 sm:mt-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-vault-cardHover border border-vault-border space-y-3">
           {/* Capture Type Tabs */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {(['IDEA', 'TASK', 'NOTE', 'PROJECT'] as InboxType[]).map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => setSelectedType(type)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedType === type
                     ? 'bg-vault-card text-emerald-500 shadow-sm border border-vault-border'
                     : 'text-vault-textMuted hover:text-vault-textPrimary'

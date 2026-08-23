@@ -34,12 +34,12 @@ export const ColdStorePage: React.FC<ColdStorePageProps> = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-5 sm:space-y-6 pb-16">
       {/* Top Header & Preserved Counter matching Screen 4 */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-vault-textPrimary tracking-tight">Cold Store</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-vault-textPrimary tracking-tight">Cold Store</h1>
             <Badge variant="cyan" dot>
               Frozen archive
             </Badge>
@@ -50,11 +50,11 @@ export const ColdStorePage: React.FC<ColdStorePageProps> = () => {
         </div>
 
         {/* Preserved Counter Card matching Screen 4 */}
-        <div className="p-5 rounded-2xl bg-vault-card border border-vault-border shadow-card min-w-[200px] text-right">
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-vault-card border border-vault-border shadow-card w-full sm:w-auto text-left sm:text-right">
           <span className="text-[10px] font-bold text-vault-textMuted block uppercase tracking-widest">
             Frozen archive
           </span>
-          <span className="text-3xl font-black text-vault-textPrimary tracking-tight mt-1 block">
+          <span className="text-2xl sm:text-3xl font-black text-vault-textPrimary tracking-tight mt-0.5 sm:mt-1 block">
             {coldProjects.length} projects
           </span>
           <span className="text-xs text-cyan-500 font-semibold block mt-0.5">
