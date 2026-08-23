@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Plus, Inbox as InboxIcon, Users, Menu } from 'lucide-react';
+import { Search, Bell, Plus, Users, Menu } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -7,26 +7,22 @@ import { useAuth } from '../../context/AuthContext';
 interface NavbarProps {
   onOpenSearch: () => void;
   onOpenNotifications: () => void;
-  onOpenInbox: () => void;
   onOpenNewProject: () => void;
   onOpenProfile: () => void;
   onOpenNetwork?: () => void;
   onToggleMobileSidebar?: () => void;
   unreadCount?: number;
-  inboxCount?: number;
   pendingRequestsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSearch,
   onOpenNotifications,
-  onOpenInbox,
   onOpenNewProject,
   onOpenProfile,
   onOpenNetwork,
   onToggleMobileSidebar,
   unreadCount = 0,
-  inboxCount = 0,
   pendingRequestsCount = 0,
 }) => {
   const { user } = useAuth();
@@ -89,21 +85,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
         )}
-
-        {/* Floating Inbox quick trigger (visible on sm+) */}
-        <button
-          onClick={onOpenInbox}
-          className="hidden sm:flex relative items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
-          title="Floating Inbox"
-        >
-          <InboxIcon className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-          <span className="hidden md:inline">Inbox</span>
-          {inboxCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-[#00E575]/20 text-[#045E33] dark:text-[#00E575] text-[10px] font-bold">
-              {inboxCount}
-            </span>
-          )}
-        </button>
 
         {/* Notifications */}
         <button

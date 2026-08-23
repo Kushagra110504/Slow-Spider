@@ -10,7 +10,7 @@ import { NetworkModal } from '../network/NetworkModal';
 import { dataService } from '../../services/dataService';
 import { deadlineService } from '../../services/deadlineService';
 import { Project } from '../../types/database';
-import { Inbox as InboxIcon } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface AppLayoutProps {
   currentTab: NavTab;
@@ -148,13 +148,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <Navbar
           onOpenSearch={() => setIsSearchOpen(true)}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
-          onOpenInbox={() => setIsInboxOpen(true)}
           onOpenNewProject={() => setIsNewProjectOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenNetwork={() => setIsNetworkOpen(true)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           unreadCount={unreadCount}
-          inboxCount={inboxCount}
           pendingRequestsCount={pendingRequestsCount}
         />
 
@@ -164,13 +162,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         </main>
       </div>
 
-      {/* Floating Inbox Quick Button in bottom right corner */}
+      {/* Floating Quick Capture Button in bottom right corner */}
       <button
         onClick={() => setIsInboxOpen(true)}
         className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#00E575] hover:bg-[#00D069] text-[#042B16] font-bold shadow-[0_0_20px_rgba(0,229,117,0.45)] hover:shadow-[0_0_25px_rgba(0,229,117,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#00C966]/40"
-        title="Floating Inbox (Shortcut: I)"
+        title="Quick Capture (Shortcut: I)"
       >
-        <InboxIcon className="w-4 h-4" />
+        <Sparkles className="w-4 h-4" />
         <span className="text-xs hidden sm:inline">Quick Capture</span>
         {inboxCount > 0 && (
           <span className="w-5 h-5 rounded-full bg-[#042B16] text-[#00E575] text-[10px] flex items-center justify-center font-black">

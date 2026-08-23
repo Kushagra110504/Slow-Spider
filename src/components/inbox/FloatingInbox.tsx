@@ -175,7 +175,7 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
               <Inbox className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-vault-textPrimary">Quick Capture & Inbox</h2>
+              <h2 className="text-sm sm:text-base font-bold text-vault-textPrimary">Quick Capture</h2>
               <p className="text-[11px] sm:text-xs text-vault-textMuted">Rapidly capture Ideas, Tasks, Milestones, and Projects</p>
             </div>
           </div>
@@ -234,7 +234,7 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
           <div className="flex justify-end gap-2">
             <Button variant="primary" size="sm" type="submit" disabled={!title.trim()}>
               <Sparkles className="w-3.5 h-3.5 mr-1" />
-              Capture to Inbox
+              Capture Item
             </Button>
           </div>
         </form>
@@ -243,7 +243,7 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
         <div className="mt-4 flex-1 overflow-y-auto pr-1 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-vault-textMuted uppercase tracking-wider">
-              Inbox Captures ({items.length})
+              Captured Items ({items.length})
             </h3>
             <span className="text-[11px] text-vault-textMuted">
               Items remain safely here until you organize or convert them.
@@ -252,7 +252,7 @@ export const FloatingInbox: React.FC<FloatingInboxProps> = ({
 
           {items.length === 0 ? (
             <div className="py-8 text-center text-vault-textMuted text-xs">
-              Your Inbox is clean. Capture thoughts above anytime.
+              No captured items yet. Press <kbd className="px-1.5 py-0.5 rounded bg-vault-cardHover text-[10px] border border-vault-border">I</kbd> anytime to capture ideas.
             </div>
           ) : (
             items.map((item) => {
