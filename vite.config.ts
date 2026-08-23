@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'ProjectVault - Project Lifecycle Management System',
-        short_name: 'ProjectVault',
-        description: 'Combine project management, milestone tracking, cold store archival, and idea capture.',
+        name: 'Slow Spider - Project Management & Milestones',
+        short_name: 'Slow Spider',
+        description: 'Combine project management, milestone tracking, cold store archival, and quick capture.',
         theme_color: '#090A0C',
         background_color: '#090A0C',
         display: 'standalone',

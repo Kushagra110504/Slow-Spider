@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
             <span className="hidden md:inline">Network</span>
             {pendingRequestsCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold animate-pulse">
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold">
                 {pendingRequestsCount}
               </span>
             )}
@@ -94,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 shadow-glow-red" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
           )}
         </button>
 

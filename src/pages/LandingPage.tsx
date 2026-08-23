@@ -195,8 +195,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <section id="hero" className="relative pt-16 pb-20 sm:pt-24 sm:pb-28 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-vault-card border border-vault-border text-vault-textSecondary text-xs font-semibold shadow-xs mb-8">
-            <span className="w-2 h-2 rounded-full bg-[#00E575] animate-pulse" />
-            <span>Slow Spider 2.0 • Project Lifecycle Management</span>
+            <span className="w-2 h-2 rounded-full bg-[#00E575]" />
+            <span>Slow Spider • Project & Milestone Workspace</span>
           </div>
 
           {/* Headline */}

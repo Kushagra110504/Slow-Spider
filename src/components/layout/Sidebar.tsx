@@ -150,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <p className="text-vault-textMuted text-[10px]">Personal Space</p>
               </div>
             </div>
-            <span className="w-2 h-2 rounded-full bg-[#00E575] shadow-[0_0_8px_rgba(0,229,117,0.7)] animate-pulse shrink-0"></span>
+            <span className="w-2 h-2 rounded-full bg-[#00E575] shrink-0"></span>
           </div>
         )}
 

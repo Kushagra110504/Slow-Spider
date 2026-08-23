@@ -55,7 +55,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="ProjectVault Security & Auth"
+      title="Slow Spider Security & Auth"
       description="Authenticate with Supabase Auth or Google OAuth."
       maxWidth="md"
     >
@@ -156,7 +156,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           <div className="pt-2">
             <Button variant="primary" size="md" type="submit" isLoading={isLoading} className="w-full">
-              Sign In to ProjectVault
+              Sign In to Slow Spider
             </Button>
           </div>
         </form>

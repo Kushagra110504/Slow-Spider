@@ -1,7 +1,7 @@
 Set-Location -Path $PSScriptRoot
 
 Write-Host "===================================================" -ForegroundColor Cyan
-Write-Host "  Starting ProjectVault PLMS..." -ForegroundColor Green
+Write-Host "  Starting Slow Spider..." -ForegroundColor Green
 Write-Host "===================================================" -ForegroundColor Cyan
 
 if (-not (Test-Path -Path "node_modules")) {

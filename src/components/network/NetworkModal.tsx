@@ -190,7 +190,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
             <Clock className="w-3.5 h-3.5" />
             <span>Requests</span>
             {incomingRequests.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-500 font-bold animate-pulse">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-500 font-bold">
                 {incomingRequests.length}
               </span>
             )}

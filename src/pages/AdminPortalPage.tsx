@@ -132,7 +132,7 @@ export const AdminPortalPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-extrabold text-white">ProjectVault Master Control Center</h1>
+                <h1 className="text-base font-extrabold text-white">Slow Spider Master Control Center</h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-500/10 text-red-400 border border-red-500/30">
                   ADMINISTRATOR
                 </span>
