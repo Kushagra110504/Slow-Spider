@@ -205,12 +205,22 @@ CREATE TABLE IF NOT EXISTS public.team_invitations (
 CREATE TABLE IF NOT EXISTS public.user_connections (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   requester_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  recipient_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  requester_email TEXT,
+  requester_name TEXT,
+  recipient_email TEXT,
+  recipient_name TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'blocked')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(requester_id, recipient_id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migration helpers if table already exists
+ALTER TABLE public.user_connections ADD COLUMN IF NOT EXISTS requester_email TEXT;
+ALTER TABLE public.user_connections ADD COLUMN IF NOT EXISTS requester_name TEXT;
+ALTER TABLE public.user_connections ADD COLUMN IF NOT EXISTS recipient_email TEXT;
+ALTER TABLE public.user_connections ADD COLUMN IF NOT EXISTS recipient_name TEXT;
+ALTER TABLE public.user_connections ALTER COLUMN recipient_id DROP NOT NULL;
 
 -- Automatic Project Progress Calculation Trigger from Milestones
 CREATE OR REPLACE FUNCTION update_project_milestone_progress()
@@ -379,7 +389,12 @@ CREATE POLICY "Project owners can issue invitations"
 -- 11. User Connections Table RLS (Mutual Network Isolation)
 CREATE POLICY "Connections accessible by participants"
   ON public.user_connections FOR SELECT
-  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+  USING (
+    auth.uid() = requester_id OR 
+    auth.uid() = recipient_id OR 
+    recipient_email = (SELECT email FROM public.users WHERE id = auth.uid()) OR
+    requester_email = (SELECT email FROM public.users WHERE id = auth.uid())
+  );
 
 CREATE POLICY "Users can create connection requests"
   ON public.user_connections FOR INSERT
@@ -387,11 +402,19 @@ CREATE POLICY "Users can create connection requests"
 
 CREATE POLICY "Participants can update connection status"
   ON public.user_connections FOR UPDATE
-  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+  USING (
+    auth.uid() = requester_id OR 
+    auth.uid() = recipient_id OR 
+    recipient_email = (SELECT email FROM public.users WHERE id = auth.uid())
+  );
 
 CREATE POLICY "Participants can delete connections"
   ON public.user_connections FOR DELETE
-  USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+  USING (
+    auth.uid() = requester_id OR 
+    auth.uid() = recipient_id OR 
+    recipient_email = (SELECT email FROM public.users WHERE id = auth.uid())
+  );
 
 -- 12. Deadline Reminders Tracking Table (Prevents Duplicate 24h, 12h, 1h Email Alerts)
 CREATE TABLE IF NOT EXISTS public.deadline_reminders (

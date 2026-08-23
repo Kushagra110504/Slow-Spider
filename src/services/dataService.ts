@@ -1071,13 +1071,21 @@ class DataService {
       }
     }
 
+    const connectionId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+
     const newConnection: UserConnection = {
-      id: `conn-${Date.now()}`,
+      id: connectionId,
       requester_id: currentUser.id,
       requester_name: currentUser.name,
       requester_avatar: currentUser.avatar_url,
       requester_email: currentUser.email,
-      recipient_id: recipient?.id || `pending-email-${Date.now()}`,
+      recipient_id: recipient?.id || `pending-${connectionId}`,
       recipient_name: recipient?.name || targetEmail.split('@')[0],
       recipient_avatar: recipient?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(targetEmail.split('@')[0])}`,
       recipient_email: targetEmail,
@@ -1094,6 +1102,10 @@ class DataService {
         id: newConnection.id,
         requester_id: newConnection.requester_id,
         recipient_id: recipient?.id || null,
+        requester_email: newConnection.requester_email,
+        requester_name: newConnection.requester_name,
+        recipient_email: newConnection.recipient_email,
+        recipient_name: newConnection.recipient_name,
         status: newConnection.status,
         created_at: newConnection.created_at,
         updated_at: newConnection.updated_at,
