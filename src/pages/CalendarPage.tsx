@@ -1,25 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Clock, AlertTriangle, Flag, CheckCircle2, Circle
+  Clock, AlertTriangle, Flag, CheckCircle2, Circle,
+  RefreshCw, Check, Download
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Toggle } from '../components/ui/Toggle';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { dataService } from '../services/dataService';
+import { googleCalendarService, GoogleCalendarEvent } from '../services/googleCalendarService';
 import { useAuth } from '../context/AuthContext';
 import { Task, Milestone, Project } from '../types/database';
+import { formatDateTime } from '../lib/utils';
 
 interface CalendarEvent {
   id: string;
   title: string;
   project: string;
-  category: 'critical' | 'approaching' | 'milestone' | 'general';
+  category: 'critical' | 'approaching' | 'milestone' | 'general' | 'google';
   time: string;
   status: 'pending' | 'in_progress' | 'completed';
   dateStr: string;
   day: number;
+  rawGoogleEvent?: GoogleCalendarEvent;
 }
 
 export const CalendarPage: React.FC = () => {
@@ -32,11 +37,20 @@ export const CalendarPage: React.FC = () => {
   const [filterApproaching, setFilterApproaching] = useState(true);
   const [filterMilestones, setFilterMilestones] = useState(true);
   const [filterGeneral, setFilterGeneral] = useState(true);
+  const [filterGoogle, setFilterGoogle] = useState(true);
 
   // Live data from dataService
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+
+  // Google Calendar Integration states
+  const [isGoogleConnected, setIsGoogleConnected] = useState(() => googleCalendarService.isConnected());
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>(() => googleCalendarService.getStoredEvents());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [importingEvent, setImportingEvent] = useState<GoogleCalendarEvent | null>(null);
+  const [importTargetProjectId, setImportTargetProjectId] = useState<string>('');
+  const [importSuccessMessage, setImportSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -49,10 +63,24 @@ export const CalendarPage: React.FC = () => {
         allMs.push(...dataService.getMilestones(p.id));
       });
       setMilestones(allMs);
+      if (userProjects.length > 0 && !importTargetProjectId) {
+        setImportTargetProjectId(userProjects[0].id);
+      }
     };
     update();
-    return dataService.subscribe(update);
-  }, [user]);
+    const unsubData = dataService.subscribe(update);
+
+    const updateGCal = () => {
+      setIsGoogleConnected(googleCalendarService.isConnected());
+      setGoogleEvents(googleCalendarService.getStoredEvents());
+    };
+    const unsubGCal = googleCalendarService.subscribe(updateGCal);
+
+    return () => {
+      unsubData();
+      unsubGCal();
+    };
+  }, [user, importTargetProjectId]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
@@ -70,7 +98,7 @@ export const CalendarPage: React.FC = () => {
     return map;
   }, [projects]);
 
-  // Derive real events from tasks and milestones
+  // Derive real events from tasks, milestones, and synced Google Calendar events
   const allEvents: CalendarEvent[] = useMemo(() => {
     const list: CalendarEvent[] = [];
 
@@ -84,7 +112,7 @@ export const CalendarPage: React.FC = () => {
           title: m.title,
           project: projectMap.get(m.project_id) || 'Workspace Project',
           category: 'milestone',
-          time: 'Due Date Checkpoint',
+          time: formatDateTime(m.due_date) || 'Milestone Checkpoint',
           status: m.status === 'done' ? 'completed' : m.status === 'overdue' ? 'pending' : 'in_progress',
           dateStr: m.due_date,
           day: mDate.getDate(),
@@ -106,7 +134,7 @@ export const CalendarPage: React.FC = () => {
           title: t.title,
           project: projectMap.get(t.project_id) || 'Project Task',
           category,
-          time: t.estimate || 'All Day',
+          time: formatDateTime(t.due_date) || (t.estimate || 'All Day'),
           status: t.status === 'done' ? 'completed' : t.status === 'in_progress' ? 'in_progress' : 'pending',
           dateStr: t.due_date,
           day: tDate.getDate(),
@@ -114,8 +142,34 @@ export const CalendarPage: React.FC = () => {
       }
     });
 
+    // 3. Add Google Calendar Events
+    if (isGoogleConnected) {
+      googleEvents.forEach(ge => {
+        const dateStr = ge.start.dateTime || ge.start.date;
+        if (!dateStr) return;
+        const gDate = new Date(dateStr);
+        if (gDate.getFullYear() === year && gDate.getMonth() === month) {
+          const timeFormatted = ge.start.dateTime 
+            ? new Date(ge.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : 'All Day';
+
+          list.push({
+            id: `gcal-${ge.id}`,
+            title: ge.summary,
+            project: 'Google Calendar Event',
+            category: 'google',
+            time: timeFormatted,
+            status: 'pending',
+            dateStr: dateStr,
+            day: gDate.getDate(),
+            rawGoogleEvent: ge,
+          });
+        }
+      });
+    }
+
     return list;
-  }, [milestones, tasks, year, month, projectMap]);
+  }, [milestones, tasks, googleEvents, isGoogleConnected, year, month, projectMap]);
 
   // Filter events based on active toggles
   const activeEvents = useMemo(() => {
@@ -124,11 +178,36 @@ export const CalendarPage: React.FC = () => {
       if (ev.category === 'approaching' && !filterApproaching) return false;
       if (ev.category === 'milestone' && !filterMilestones) return false;
       if (ev.category === 'general' && !filterGeneral) return false;
+      if (ev.category === 'google' && !filterGoogle) return false;
       return true;
     });
-  }, [allEvents, filterCritical, filterApproaching, filterMilestones, filterGeneral]);
+  }, [allEvents, filterCritical, filterApproaching, filterMilestones, filterGeneral, filterGoogle]);
 
   const selectedDayEvents = activeEvents.filter((ev) => ev.day === selectedDay);
+
+  const handleConnectGoogle = async () => {
+    setIsSyncing(true);
+    await googleCalendarService.connectGoogleCalendar(user);
+    setIsSyncing(false);
+  };
+
+  const handleSyncGoogle = async () => {
+    setIsSyncing(true);
+    await googleCalendarService.syncEvents();
+    setIsSyncing(false);
+  };
+
+  const handleDisconnectGoogle = () => {
+    googleCalendarService.disconnect();
+  };
+
+  const handleImportGoogleEvent = () => {
+    if (!importingEvent || !importTargetProjectId) return;
+    googleCalendarService.importGoogleEventAsTask(importingEvent, importTargetProjectId, user);
+    setImportSuccessMessage(`Imported "${importingEvent.summary}" as a task in your project.`);
+    setImportingEvent(null);
+    setTimeout(() => setImportSuccessMessage(null), 4000);
+  };
 
   const getCategoryDot = (category: CalendarEvent['category']) => {
     switch (category) {
@@ -140,6 +219,8 @@ export const CalendarPage: React.FC = () => {
         return 'bg-[#00E575] shadow-[0_0_8px_rgba(0,229,117,0.7)]';
       case 'general':
         return 'bg-blue-500';
+      case 'google':
+        return 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.7)]';
     }
   };
 
@@ -153,6 +234,8 @@ export const CalendarPage: React.FC = () => {
         return <Badge variant="green">Milestone</Badge>;
       case 'general':
         return <Badge variant="blue">General</Badge>;
+      case 'google':
+        return <Badge variant="purple">Google Event</Badge>;
     }
   };
 
@@ -177,12 +260,50 @@ export const CalendarPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-vault-textPrimary tracking-tight">Calendar</h1>
           <p className="text-xs text-vault-textMuted mt-1">
-            Deadlines, scheduled milestones, and time-sensitive project deliverables.
+            Deadlines, scheduled milestones, and Google Calendar event sync.
           </p>
         </div>
 
         {/* Action controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Google Calendar Connect / Sync Button */}
+          {!isGoogleConnected ? (
+            <button
+              onClick={handleConnectGoogle}
+              disabled={isSyncing}
+              className="px-3 py-1.5 rounded-xl bg-vault-card border border-vault-border hover:border-indigo-500/50 hover:bg-indigo-500/10 text-xs font-semibold text-vault-textPrimary flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+              title="Connect Google Calendar to sync external meetings and events"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>{isSyncing ? 'Connecting...' : 'Connect Google Calendar'}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 bg-vault-card border border-indigo-500/30 rounded-xl px-2.5 py-1">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-xs font-semibold text-indigo-400">Google Calendar</span>
+              <button
+                onClick={handleSyncGoogle}
+                disabled={isSyncing}
+                className="p-1 text-vault-textMuted hover:text-vault-textPrimary rounded cursor-pointer"
+                title="Sync Google Events Now"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-indigo-400' : ''}`} />
+              </button>
+              <button
+                onClick={handleDisconnectGoogle}
+                className="text-[10px] text-vault-textMuted hover:text-red-400 ml-1 cursor-pointer"
+                title="Disconnect Google Calendar"
+              >
+                Disconnect
+              </button>
+            </div>
+          )}
+
           <Button variant="secondary" size="sm" onClick={handleToday}>
             Today
           </Button>
@@ -210,6 +331,14 @@ export const CalendarPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Success banner if imported */}
+      {importSuccessMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
+          <Check className="w-4 h-4 text-emerald-400" />
+          <span>{importSuccessMessage}</span>
+        </div>
+      )}
+
       {/* Main Grid: Calendar Matrix & Agenda */}
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Left Section: Month Matrix (8 Cols) */}
@@ -230,69 +359,69 @@ export const CalendarPage: React.FC = () => {
 
                 {/* 35-Day Matrix */}
                 <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-              {[...Array(35)].map((_, idx) => {
-                const dayNum = idx - firstDayOfWeek + 1;
-                const isCurrentMonth = dayNum > 0 && dayNum <= daysInMonth;
-                const isSelected = isCurrentMonth && dayNum === selectedDay;
-                const dayEvents = isCurrentMonth ? activeEvents.filter((e) => e.day === dayNum) : [];
-                const hasEvents = dayEvents.length > 0;
+                  {[...Array(35)].map((_, idx) => {
+                    const dayNum = idx - firstDayOfWeek + 1;
+                    const isCurrentMonth = dayNum > 0 && dayNum <= daysInMonth;
+                    const isSelected = isCurrentMonth && dayNum === selectedDay;
+                    const dayEvents = isCurrentMonth ? activeEvents.filter((e) => e.day === dayNum) : [];
+                    const hasEvents = dayEvents.length > 0;
 
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => isCurrentMonth && setSelectedDay(dayNum)}
-                    className={`h-16 sm:h-20 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between group relative ${
-                      !isCurrentMonth
-                        ? 'bg-vault-card/20 border-vault-border/30 text-vault-textMuted/30 cursor-default'
-                        : isSelected
-                        ? 'bg-[#00E575]/15 border-[#00E575] text-vault-textPrimary shadow-[0_0_15px_rgba(0,229,117,0.25)] cursor-pointer'
-                        : 'bg-vault-cardHover border-vault-border hover:border-vault-borderLight text-vault-textSecondary cursor-pointer'
-                    }`}
-                  >
-                    {/* Day number header */}
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-xs font-bold ${
-                          isSelected
-                            ? 'text-[#00C966] dark:text-[#00E575] font-extrabold'
-                            : isCurrentMonth
-                            ? 'text-vault-textPrimary'
-                            : 'text-vault-textMuted/40'
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => isCurrentMonth && setSelectedDay(dayNum)}
+                        className={`h-16 sm:h-20 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border transition-all flex flex-col justify-between group relative ${
+                          !isCurrentMonth
+                            ? 'bg-vault-card/20 border-vault-border/30 text-vault-textMuted/30 cursor-default'
+                            : isSelected
+                            ? 'bg-[#00E575]/15 border-[#00E575] text-vault-textPrimary shadow-[0_0_15px_rgba(0,229,117,0.25)] cursor-pointer'
+                            : 'bg-vault-cardHover border-vault-border hover:border-vault-borderLight text-vault-textSecondary cursor-pointer'
                         }`}
                       >
-                        {isCurrentMonth ? dayNum : ''}
-                      </span>
-                      {isSelected && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00E575] shadow-[0_0_6px_rgba(0,229,117,0.8)]" />
-                      )}
-                    </div>
-
-                    {/* Event indicators / dots */}
-                    {hasEvents && (
-                      <div className="flex items-center gap-1 flex-wrap mt-auto">
-                        {dayEvents.map((ev) => (
+                        {/* Day number header */}
+                        <div className="flex items-center justify-between">
                           <span
-                            key={ev.id}
-                            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getCategoryDot(ev.category)}`}
-                            title={`${ev.title} (${ev.project})`}
-                          />
-                        ))}
+                            className={`text-xs font-bold ${
+                              isSelected
+                                ? 'text-[#00C966] dark:text-[#00E575] font-extrabold'
+                                : isCurrentMonth
+                                ? 'text-vault-textPrimary'
+                                : 'text-vault-textMuted/40'
+                            }`}
+                          >
+                            {isCurrentMonth ? dayNum : ''}
+                          </span>
+                          {isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00E575] shadow-[0_0_6px_rgba(0,229,117,0.8)]" />
+                          )}
+                        </div>
+
+                        {/* Event indicators / dots */}
+                        {hasEvents && (
+                          <div className="flex items-center gap-1 flex-wrap mt-auto">
+                            {dayEvents.map((ev) => (
+                              <span
+                                key={ev.id}
+                                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getCategoryDot(ev.category)}`}
+                                title={`${ev.title} (${ev.project})`}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </Card>
+          </Card>
 
           {/* Category Filters Toggle Panel */}
           <Card className="p-4 sm:p-5 bg-vault-card border-vault-border">
             <h3 className="text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-3 sm:mb-4">
               Category Filters
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-3">
               {/* Critical */}
               <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -328,6 +457,15 @@ export const CalendarPage: React.FC = () => {
                 </div>
                 <Toggle checked={filterGeneral} onChange={setFilterGeneral} />
               </div>
+
+              {/* Google Events */}
+              <div className="p-2.5 sm:p-3 rounded-xl bg-vault-cardHover border border-vault-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" />
+                  <span className="text-xs font-semibold text-vault-textPrimary">Google</span>
+                </div>
+                <Toggle checked={filterGoogle} onChange={setFilterGoogle} />
+              </div>
             </div>
           </Card>
         </div>
@@ -346,7 +484,7 @@ export const CalendarPage: React.FC = () => {
                   {monthNames[month].slice(0, 3)} {selectedDay}, {year}
                 </h2>
                 <p className="text-xs text-vault-textMuted mt-0.5">
-                  {selectedDayEvents.length} scheduled deliverable{selectedDayEvents.length === 1 ? '' : 's'}
+                  {selectedDayEvents.length} scheduled item{selectedDayEvents.length === 1 ? '' : 's'}
                 </p>
               </div>
 
@@ -355,13 +493,13 @@ export const CalendarPage: React.FC = () => {
                 {selectedDayEvents.length === 0 ? (
                   <div className="py-12 text-center text-vault-textMuted">
                     <Clock className="w-8 h-8 mx-auto text-vault-textMuted mb-2 opacity-50" />
-                    <p className="text-xs">No scheduled events on this day.</p>
+                    <p className="text-xs">No scheduled items on this day.</p>
                   </div>
                 ) : (
                   selectedDayEvents.map((ev) => (
                     <div
                       key={ev.id}
-                      className="p-4 rounded-2xl bg-vault-cardHover border border-vault-border hover:border-vault-borderLight transition-all group"
+                      className="p-4 rounded-2xl bg-vault-cardHover border border-vault-border hover:border-vault-borderLight transition-all group space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -375,19 +513,31 @@ export const CalendarPage: React.FC = () => {
                         {getCategoryBadge(ev.category)}
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-vault-border flex items-center justify-between text-[11px] text-vault-textMuted font-mono">
+                      <div className="pt-2 border-t border-vault-border flex items-center justify-between text-[11px] text-vault-textMuted font-mono">
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-vault-textMuted" />
                           <span>{ev.time}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {ev.status === 'completed' ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#00C966] dark:text-[#00E575]" />
-                          ) : (
-                            <Circle className="w-3.5 h-3.5 text-amber-500" />
-                          )}
-                          <span className="capitalize">{ev.status.replace('_', ' ')}</span>
-                        </div>
+                        
+                        {ev.category === 'google' && ev.rawGoogleEvent ? (
+                          <button
+                            onClick={() => setImportingEvent(ev.rawGoogleEvent || null)}
+                            className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer bg-indigo-500/10 px-2 py-0.5 rounded-lg border border-indigo-500/20"
+                            title="Import this Google Calendar event into a Slow Spider project"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Import Task</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            {ev.status === 'completed' ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#00C966] dark:text-[#00E575]" />
+                            ) : (
+                              <Circle className="w-3.5 h-3.5 text-amber-500" />
+                            )}
+                            <span className="capitalize">{ev.status.replace('_', ' ')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -411,6 +561,55 @@ export const CalendarPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Import Google Event to Project Modal */}
+      {importingEvent && (
+        <Modal
+          isOpen={true}
+          onClose={() => setImportingEvent(null)}
+          title="Import Google Calendar Event"
+          description="Convert this external calendar event directly into a Slow Spider project task."
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-vault-cardHover border border-vault-border space-y-1">
+              <span className="text-xs font-bold text-vault-textPrimary block">{importingEvent.summary}</span>
+              {importingEvent.description && (
+                <p className="text-xs text-vault-textMuted">{importingEvent.description}</p>
+              )}
+              <span className="text-[11px] text-vault-textMuted font-mono block">
+                {importingEvent.start.dateTime || importingEvent.start.date}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-vault-textSecondary mb-1.5">
+                Select Destination Project
+              </label>
+              <select
+                value={importTargetProjectId}
+                onChange={(e) => setImportTargetProjectId(e.target.value)}
+                className="w-full bg-vault-cardHover border border-vault-border rounded-xl px-3.5 py-2 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.team_category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setImportingEvent(null)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleImportGoogleEvent}>
+                Confirm Import
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
