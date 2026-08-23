@@ -54,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Dialog Box */}
       <div
         className={cn(
-          'relative w-full bg-vault-surface border border-vault-border rounded-2xl p-6 shadow-2xl z-10 animate-slide-up text-vault-textPrimary',
+          'relative w-full bg-vault-surface border border-vault-border rounded-2xl p-4 sm:p-6 shadow-2xl z-10 animate-slide-up text-vault-textPrimary max-h-[90vh] overflow-y-auto',
           maxWidthStyles[maxWidth]
         )}
       >

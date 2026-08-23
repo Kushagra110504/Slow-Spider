@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { AdminPortalPage } from './pages/AdminPortalPage';
 import { AppLayout } from './components/layout/AppLayout';
@@ -15,17 +16,37 @@ function AuthenticatedApp() {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-1');
+  const [publicView, setPublicView] = useState<'landing' | 'auth'>('landing');
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pv_theme');
+    return saved !== null ? saved === 'dark' : true;
+  });
+
+  const handleToggleDarkMode = (val?: boolean) => {
+    setIsDarkMode(prev => typeof val === 'boolean' ? val : !prev);
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-vault-bg flex items-center justify-center text-vault-textMuted text-xs">
-        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#00E575] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    if (publicView === 'auth') {
+      return <AuthPage onBackToHome={() => setPublicView('landing')} />;
+    }
+    return (
+      <LandingPage
+        onStartNow={() => setPublicView('auth')}
+        onSignIn={() => setPublicView('auth')}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
+      />
+    );
   }
 
   const handleNavigate = (tab: NavTab, projectId?: string) => {

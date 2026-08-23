@@ -214,20 +214,22 @@ export const CalendarPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Section: Month Matrix (8 Cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <Card className="p-6 bg-vault-card border-vault-border">
-            {/* Weekdays header */}
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-3">
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
-              <span>Sun</span>
-            </div>
+          <Card className="p-4 sm:p-6 bg-vault-card border-vault-border">
+            <div className="overflow-x-auto pb-2">
+              <div className="min-w-[460px]">
+                {/* Weekdays header */}
+                <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-vault-textMuted uppercase tracking-wider mb-3">
+                  <span>Mon</span>
+                  <span>Tue</span>
+                  <span>Wed</span>
+                  <span>Thu</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                  <span>Sun</span>
+                </div>
 
-            {/* 35-Day Matrix */}
-            <div className="grid grid-cols-7 gap-2">
+                {/* 35-Day Matrix */}
+                <div className="grid grid-cols-7 gap-2">
               {[...Array(35)].map((_, idx) => {
                 const dayNum = idx - firstDayOfWeek + 1;
                 const isCurrentMonth = dayNum > 0 && dayNum <= daysInMonth;
@@ -281,7 +283,9 @@ export const CalendarPage: React.FC = () => {
                 );
               })}
             </div>
-          </Card>
+          </div>
+        </div>
+      </Card>
 
           {/* Category Filters Toggle Panel */}
           <Card className="p-5 bg-vault-card border-vault-border">

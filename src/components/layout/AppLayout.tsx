@@ -97,6 +97,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const handleToggleDarkMode = (val?: boolean) => {
     setIsDarkMode(prev => typeof val === 'boolean' ? val : !prev);
   };
@@ -115,6 +117,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onToggleDarkMode={handleToggleDarkMode}
         selectedProjectId={selectedProjectId}
         trashCount={trashCount}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main Content Area */}
@@ -127,13 +131,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onOpenNewProject={() => setIsNewProjectOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenNetwork={() => setIsNetworkOpen(true)}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           unreadCount={unreadCount}
           inboxCount={inboxCount}
           pendingRequestsCount={pendingRequestsCount}
         />
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

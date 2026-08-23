@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { 
-  Layers, Lock, Mail, User as UserIcon, 
+  Lock, Mail, User as UserIcon, 
   ArrowRight, ShieldCheck, AlertCircle, Info 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
-export const AuthPage: React.FC = () => {
+interface AuthPageProps {
+  onBackToHome?: () => void;
+}
+
+export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome }) => {
   const { login, signup, loginWithGoogle } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -54,26 +58,37 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-vault-bg text-vault-textPrimary flex flex-col justify-center items-center p-4 sm:p-6 select-none">
+    <div className="min-h-screen bg-vault-bg text-vault-textPrimary flex flex-col justify-center items-center p-4 sm:p-6 select-none relative">
+      {/* Back to Home Trigger */}
+      {onBackToHome && (
+        <button
+          onClick={onBackToHome}
+          className="absolute top-6 left-6 text-xs font-semibold text-vault-textMuted hover:text-vault-textPrimary flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-card hover:bg-vault-cardHover border border-vault-border transition-all cursor-pointer"
+        >
+          <span>← Back to Slow Spider Home</span>
+        </button>
+      )}
+
       {/* Background radial ambient glow */}
       <div className="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-        <div className="w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl" />
-        <div className="w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-3xl -translate-y-24 translate-x-24" />
+        <div className="w-[600px] h-[600px] bg-[#00E575]/10 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-[1px] shadow-glow-green mb-1">
-            <div className="w-full h-full bg-vault-surface rounded-[15px] flex items-center justify-center">
-              <Layers className="w-6 h-6 text-emerald-400" />
-            </div>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-vault-card border border-vault-border p-2 mb-1">
+            <img
+              src="/logo.png"
+              alt="Slow Spider"
+              className="w-full h-full object-contain logo-stroke-outline"
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-vault-textPrimary tracking-tight">
-            ProjectVault
+            SLOW SPIDER
           </h1>
           <p className="text-xs text-vault-textMuted">
-            Project Lifecycle Management System (PLMS)
+            Project Lifecycle Management Workspace
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutGrid, FolderGit2, Calendar, Snowflake, Trash2,
-  Users, AlertCircle, LucideIcon
+  Users, AlertCircle, LucideIcon, X
 } from 'lucide-react';
 import { Toggle } from '../ui/Toggle';
 import { cn } from '../../lib/utils';
@@ -16,6 +16,8 @@ interface SidebarProps {
   onToggleDarkMode: (val?: boolean) => void;
   selectedProjectId?: string;
   trashCount?: number;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 interface NavItem {
@@ -31,6 +33,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isDarkMode,
   onToggleDarkMode,
   trashCount = 0,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const { user } = useAuth();
   const navItems: NavItem[] = [
@@ -42,37 +46,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-vault-sidebar border-r border-vault-border flex flex-col justify-between h-screen shrink-0 sticky top-0 select-none z-30 transition-colors">
-      {/* Top Header / Workspace */}
-      <div>
-        <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Slow Spider"
-              className="w-8 h-8 object-contain logo-stroke-outline shrink-0"
-            />
-            <div>
-              <h1 className="text-sm font-bold text-vault-textPrimary tracking-tight">
-                SLOW SPIDER
-              </h1>
-            </div>
-          </div>
-        </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+          onClick={onCloseMobile}
+        />
+      )}
 
-        {/* Navigation Links */}
-        <nav className="p-3 space-y-1.5 mt-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id || (item.id === 'projects' && currentTab === 'project-details');
-            return (
+      <aside 
+        className={cn(
+          "w-64 bg-vault-sidebar border-r border-vault-border flex flex-col justify-between h-screen shrink-0 select-none z-50 transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 md:sticky md:top-0 md:translate-x-0",
+          isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+        )}
+      >
+        {/* Top Header / Workspace */}
+        <div>
+          <div className="p-5 pb-6 border-b border-vault-border flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="Slow Spider"
+                className="w-8 h-8 object-contain logo-stroke-outline shrink-0"
+              />
+              <div>
+                <h1 className="text-sm font-bold text-vault-textPrimary tracking-tight">
+                  SLOW SPIDER
+                </h1>
+              </div>
+            </div>
+
+            {/* Mobile Close Button */}
+            {onCloseMobile && (
               <button
-                key={item.id}
-                onClick={() => onSelectTab(item.id as NavTab)}
-                className={cn(
-                  'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group cursor-pointer text-left',
-                  isActive
-                    ? 'bg-[#00E575]/10 text-vault-textPrimary shadow-sm border border-[#00E575]/30'
+                onClick={onCloseMobile}
+                className="md:hidden p-1.5 rounded-lg text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover transition-colors cursor-pointer"
+                title="Close Navigation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="p-3 space-y-1.5 mt-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id || (item.id === 'projects' && currentTab === 'project-details');
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onSelectTab(item.id as NavTab);
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                  className={cn(
+                    'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group cursor-pointer text-left',
+                    isActive
+                      ? 'bg-[#00E575]/10 text-vault-textPrimary shadow-sm border border-[#00E575]/30'
                     : 'text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover/60'
                 )}
               >
@@ -151,5 +184,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </aside>
+  </>
   );
 };

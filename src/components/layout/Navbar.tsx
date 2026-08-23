@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Plus, Inbox as InboxIcon, Users } from 'lucide-react';
+import { Search, Bell, Plus, Inbox as InboxIcon, Users, Menu } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenNewProject: () => void;
   onOpenProfile: () => void;
   onOpenNetwork?: () => void;
+  onToggleMobileSidebar?: () => void;
   unreadCount?: number;
   inboxCount?: number;
   pendingRequestsCount?: number;
@@ -23,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNewProject,
   onOpenProfile,
   onOpenNetwork,
+  onToggleMobileSidebar,
   unreadCount = 0,
   inboxCount = 0,
   pendingRequestsCount = 0,
@@ -30,34 +32,46 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user } = useAuth();
 
   return (
-    <header className="h-16 border-b border-vault-border bg-vault-surface/90 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Search trigger button */}
-      <div className="flex-1 max-w-md">
+    <header className="h-16 border-b border-vault-border bg-vault-surface/90 backdrop-blur-md px-3 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      {/* Left: Mobile menu toggle + Search bar */}
+      <div className="flex items-center gap-2 flex-1 max-w-md mr-2">
+        {onToggleMobileSidebar && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden p-2 rounded-xl text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover border border-vault-border shrink-0 cursor-pointer"
+            title="Open Navigation"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Search trigger button */}
         <button
           onClick={onOpenSearch}
-          className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted text-xs hover:border-vault-borderLight hover:text-vault-textPrimary transition-all cursor-pointer shadow-sm"
+          className="flex-1 flex items-center justify-between px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textMuted text-xs hover:border-vault-borderLight hover:text-vault-textPrimary transition-all cursor-pointer shadow-sm min-w-0"
         >
-          <div className="flex items-center gap-2.5">
-            <Search className="w-3.5 h-3.5" />
-            <span>Search projects, tasks, or milestones...</span>
+          <div className="flex items-center gap-2 truncate">
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate hidden sm:inline">Search projects, tasks, milestones...</span>
+            <span className="truncate sm:hidden">Search...</span>
           </div>
-          <kbd className="px-2 py-0.5 rounded bg-vault-card border border-vault-border text-[10px] font-mono text-vault-textMuted">
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-vault-card border border-vault-border text-[9px] font-mono text-vault-textMuted ml-1">
             Ctrl+K
           </kbd>
         </button>
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {/* Network quick trigger */}
         {onOpenNetwork && (
           <button
             onClick={onOpenNetwork}
-            className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
-            title="My Network (Colleagues & Connections)"
+            className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
+            title="My Network"
           >
             <Users className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-            <span>Network</span>
+            <span className="hidden sm:inline">Network</span>
             {pendingRequestsCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold animate-pulse">
                 {pendingRequestsCount}
@@ -69,11 +83,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Floating Inbox quick trigger */}
         <button
           onClick={onOpenInbox}
-          className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
-          title="Floating Inbox (Quick capture space)"
+          className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-vault-cardHover border border-vault-border text-vault-textSecondary hover:text-[#00C966] hover:border-[#00E575]/50 text-xs font-medium transition-all cursor-pointer"
+          title="Floating Inbox"
         >
           <InboxIcon className="w-4 h-4 text-[#00C966] dark:text-[#00E575]" />
-          <span>Floating Inbox</span>
+          <span className="hidden sm:inline">Inbox</span>
           {inboxCount > 0 && (
             <span className="px-1.5 py-0.2 rounded-full bg-[#00E575]/20 text-[#045E33] dark:text-[#00E575] text-[10px] font-bold">
               {inboxCount}
@@ -98,27 +112,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           variant="primary"
           size="sm"
           onClick={onOpenNewProject}
-          className="shadow-glow-green"
+          className="shadow-glow-green text-xs font-bold px-2.5 sm:px-3"
         >
-          <Plus className="w-4 h-4" />
-          <span>New Project</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline ml-1">New Project</span>
         </Button>
 
         {/* Divider */}
-        <div className="h-6 w-px bg-vault-border" />
+        <div className="hidden sm:block h-6 w-px bg-vault-border" />
 
         {/* User Profile Trigger Button */}
         <button
           onClick={onOpenProfile}
-          className="flex items-center gap-2.5 pl-1 p-1 rounded-xl hover:bg-vault-cardHover transition-colors cursor-pointer"
-          title="Open Profile Settings"
+          className="flex items-center gap-2 p-1 rounded-xl hover:bg-vault-cardHover transition-colors cursor-pointer"
+          title="User Profile & Settings"
         >
           <Avatar user={user} size="sm" />
-          <div className="hidden md:block text-left">
-            <p className="text-xs font-semibold text-vault-textPrimary leading-tight">
-              {user?.name || 'User'}
-            </p>
-          </div>
         </button>
       </div>
     </header>
