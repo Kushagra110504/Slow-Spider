@@ -173,7 +173,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                   <div className="flex items-center gap-2">
                     <img src={m.avatar_url} alt={m.name} className="w-5 h-5 rounded-full object-cover" />
                     <span className="text-vault-textPrimary font-medium">{m.name}</span>
-                    <span className="text-[10px] text-vault-textMuted">({m.email})</span>
+                    {m.id === user?.id && <span className="text-[10px] text-vault-textMuted">(You)</span>}
                   </div>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     {project.owner_id === m.id ? 'Owner' : 'Member'}

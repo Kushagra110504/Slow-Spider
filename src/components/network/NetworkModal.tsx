@@ -239,7 +239,6 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
                   const isRequester = c.requester_id === user?.id;
                   const colleagueName = isRequester ? c.recipient_name : c.requester_name;
                   const colleagueAvatar = isRequester ? c.recipient_avatar : c.requester_avatar;
-                  const colleagueEmail = isRequester ? c.recipient_email : c.requester_email;
 
                   return (
                     <div
@@ -254,8 +253,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
                         />
                         <div className="min-w-0">
                           <h4 className="text-xs font-bold text-vault-textPrimary truncate">{colleagueName}</h4>
-                          <p className="text-[10px] text-vault-textMuted truncate font-mono">
-                            {colleagueEmail || 'Connected Member'}
+                          <p className="text-[10px] text-vault-textMuted truncate font-medium">
+                            Connected Member
                           </p>
                         </div>
                       </div>
@@ -456,7 +455,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
                       />
                       <div className="min-w-0">
                         <h4 className="text-xs font-bold text-vault-textPrimary truncate">{targetUser.name}</h4>
-                        <p className="text-[10px] text-vault-textMuted truncate font-mono">{targetUser.email}</p>
+                        <p className="text-[10px] text-vault-textMuted font-medium">Slow Spider Member</p>
                       </div>
                     </div>
 
