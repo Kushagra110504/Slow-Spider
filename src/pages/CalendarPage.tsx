@@ -51,6 +51,9 @@ export const CalendarPage: React.FC = () => {
   const [importingEvent, setImportingEvent] = useState<GoogleCalendarEvent | null>(null);
   const [importTargetProjectId, setImportTargetProjectId] = useState<string>('');
   const [importSuccessMessage, setImportSuccessMessage] = useState<string | null>(null);
+  const [showGoogleAuthModal, setShowGoogleAuthModal] = useState(false);
+  const [googleClientIdInput, setGoogleClientIdInput] = useState(() => localStorage.getItem('pv_google_client_id') || '');
+  const [googleAuthError, setGoogleAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -142,7 +145,7 @@ export const CalendarPage: React.FC = () => {
       }
     });
 
-    // 3. Add Google Calendar Events
+    // 3. Add Google Calendar Events (100% Real)
     if (isGoogleConnected) {
       googleEvents.forEach(ge => {
         const dateStr = ge.start.dateTime || ge.start.date;
@@ -185,20 +188,45 @@ export const CalendarPage: React.FC = () => {
 
   const selectedDayEvents = activeEvents.filter((ev) => ev.day === selectedDay);
 
-  const handleConnectGoogle = async () => {
+  const handleConnectGoogle = async (customId?: string) => {
     setIsSyncing(true);
-    await googleCalendarService.connectGoogleCalendar(user);
+    setGoogleAuthError(null);
+    const clientIdToUse = customId || googleClientIdInput.trim() || undefined;
+    const res = await googleCalendarService.connectGoogleCalendar(clientIdToUse);
     setIsSyncing(false);
+
+    if (!res.success) {
+      if (res.error?.includes('Google Client ID is missing')) {
+        setShowGoogleAuthModal(true);
+      } else {
+        setGoogleAuthError(res.error || 'Failed to connect Google Calendar');
+      }
+    } else {
+      if (clientIdToUse) {
+        localStorage.setItem('pv_google_client_id', clientIdToUse);
+      }
+      setShowGoogleAuthModal(false);
+      setImportSuccessMessage(`Google Calendar connected! Synced ${res.count || 0} live event${res.count === 1 ? '' : 's'}.`);
+      setTimeout(() => setImportSuccessMessage(null), 4000);
+    }
   };
 
   const handleSyncGoogle = async () => {
     setIsSyncing(true);
-    await googleCalendarService.syncEvents();
+    setGoogleAuthError(null);
+    const res = await googleCalendarService.syncEvents();
     setIsSyncing(false);
+    if (!res.success) {
+      setGoogleAuthError(res.error || 'Sync failed');
+    } else {
+      setImportSuccessMessage(`Synced ${res.count || 0} event${res.count === 1 ? '' : 's'} from Google Calendar.`);
+      setTimeout(() => setImportSuccessMessage(null), 4000);
+    }
   };
 
   const handleDisconnectGoogle = () => {
     googleCalendarService.disconnect();
+    setGoogleAuthError(null);
   };
 
   const handleImportGoogleEvent = () => {
@@ -269,7 +297,7 @@ export const CalendarPage: React.FC = () => {
           {/* Google Calendar Connect / Sync Button */}
           {!isGoogleConnected ? (
             <button
-              onClick={handleConnectGoogle}
+              onClick={() => handleConnectGoogle()}
               disabled={isSyncing}
               className="px-3 py-1.5 rounded-xl bg-vault-card border border-vault-border hover:border-indigo-500/50 hover:bg-indigo-500/10 text-xs font-semibold text-vault-textPrimary flex items-center gap-2 transition-all cursor-pointer shadow-sm"
               title="Connect Google Calendar to sync external meetings and events"
@@ -336,6 +364,22 @@ export const CalendarPage: React.FC = () => {
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
           <Check className="w-4 h-4 text-emerald-400" />
           <span>{importSuccessMessage}</span>
+        </div>
+      )}
+
+      {/* Google Error Banner */}
+      {googleAuthError && (
+        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between gap-2 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{googleAuthError}</span>
+          </div>
+          <button
+            onClick={() => setGoogleAuthError(null)}
+            className="text-red-400 hover:text-red-300 text-xs cursor-pointer font-bold"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -605,6 +649,53 @@ export const CalendarPage: React.FC = () => {
               </Button>
               <Button variant="primary" size="sm" onClick={handleImportGoogleEvent}>
                 Confirm Import
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Real Google OAuth Setup Modal */}
+      {showGoogleAuthModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowGoogleAuthModal(false)}
+          title="Connect Real Google Calendar"
+          description="Authenticate directly with your Google account to fetch live calendar events in real time."
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-vault-cardHover border border-vault-border text-xs text-vault-textMuted space-y-1.5 leading-relaxed">
+              <p className="font-semibold text-vault-textPrimary">OAuth 2.0 Client Authentication</p>
+              <p>
+                To enable 100% real Google Calendar sync in your environment, enter your Google OAuth 2.0 Client ID (or configure <code className="text-[#00C966] dark:text-[#00E575] font-mono bg-vault-card px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</code> in <code className="text-[#00C966] dark:text-[#00E575] font-mono bg-vault-card px-1 py-0.5 rounded">.env</code>).
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-vault-textSecondary mb-1.5">
+                Google OAuth Client ID
+              </label>
+              <input
+                type="text"
+                value={googleClientIdInput}
+                onChange={(e) => setGoogleClientIdInput(e.target.value)}
+                placeholder="e.g. 123456789-abcdefg.apps.googleusercontent.com"
+                className="w-full bg-vault-cardHover border border-vault-border rounded-xl px-3.5 py-2 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] font-mono"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowGoogleAuthModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!googleClientIdInput.trim() || isSyncing}
+                onClick={() => handleConnectGoogle(googleClientIdInput.trim())}
+              >
+                {isSyncing ? 'Connecting...' : 'Authorize with Google'}
               </Button>
             </div>
           </div>
