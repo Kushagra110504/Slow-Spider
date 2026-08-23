@@ -14,6 +14,7 @@ import { googleCalendarService, GoogleCalendarEvent } from '../services/googleCa
 import { useAuth } from '../context/AuthContext';
 import { Task, Milestone, Project } from '../types/database';
 import { formatDateTime } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 interface CalendarEvent {
   id: string;
@@ -78,6 +79,18 @@ export const CalendarPage: React.FC = () => {
       setGoogleEvents(googleCalendarService.getStoredEvents());
     };
     const unsubGCal = googleCalendarService.subscribe(updateGCal);
+
+    // Check if returning from Google OAuth redirect with provider_token
+    if (supabase) {
+      supabase.auth.getSession().then(({ data }) => {
+        const token = (data?.session as any)?.provider_token;
+        if (token && !localStorage.getItem('pv_gcal_token_v1')) {
+          localStorage.setItem('pv_gcal_token_v1', token);
+          localStorage.setItem('pv_gcal_connected_v1', 'true');
+          googleCalendarService.syncEvents();
+        }
+      });
+    }
 
     return () => {
       unsubData();
@@ -696,6 +709,20 @@ export const CalendarPage: React.FC = () => {
                 onClick={() => handleConnectGoogle(googleClientIdInput.trim())}
               >
                 {isSyncing ? 'Connecting...' : 'Authorize with Google'}
+              </Button>
+            </div>
+
+            <div className="pt-3 border-t border-vault-border flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="text-[11px] text-vault-textMuted">Or authenticate with Supabase OAuth:</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  await googleCalendarService.connectViaSupabaseOAuth();
+                }}
+                className="text-xs"
+              >
+                Sign in with Google OAuth
               </Button>
             </div>
           </div>

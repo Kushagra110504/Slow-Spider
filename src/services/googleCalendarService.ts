@@ -25,6 +25,8 @@ const STORAGE_KEYS = {
   GCAL_LAST_SYNC: 'pv_gcal_last_sync_v1',
 };
 
+const GCAL_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly';
+
 class GoogleCalendarService {
   private listeners: Array<() => void> = [];
 
@@ -33,10 +35,7 @@ class GoogleCalendarService {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.GCAL_EVENTS);
       if (raw && (raw.includes('Product Roadmap & Sprint Planning') || raw.includes('UI/UX Design Sync'))) {
-        localStorage.removeItem(STORAGE_KEYS.GCAL_EVENTS);
-        localStorage.removeItem(STORAGE_KEYS.GCAL_TOKEN);
-        localStorage.setItem(STORAGE_KEYS.GCAL_CONNECTED, 'false');
-        localStorage.removeItem(STORAGE_KEYS.GCAL_LAST_SYNC);
+        this.disconnect();
       }
     } catch {}
   }
@@ -71,47 +70,37 @@ class GoogleCalendarService {
   }
 
   /**
-   * Authorizes with Google Calendar API using real Google OAuth 2.0.
-   * If a custom Client ID is provided by the user or .env, uses GIS token client.
-   * Also checks if current Supabase session contains a provider token.
+   * Authorizes with Google Calendar API using real Google Identity Services (GIS) Token Client.
+   * Prompts the official Google OAuth consent modal specifically for Calendar scopes.
    */
   public async connectGoogleCalendar(customClientId?: string): Promise<{ success: boolean; error?: string; count?: number }> {
     try {
-      // 1. Check if Supabase session has an active Google OAuth provider token
-      if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        const session = data?.session;
-        if (session && (session as any).provider_token) {
-          localStorage.setItem(STORAGE_KEYS.GCAL_TOKEN, (session as any).provider_token);
-          localStorage.setItem(STORAGE_KEYS.GCAL_CONNECTED, 'true');
-          return await this.syncEvents();
-        }
-      }
-
-      // 2. Use Google Identity Services (GIS) Token Client
       const clientId = customClientId || (import.meta as any).env.VITE_GOOGLE_CLIENT_ID;
 
       if (!clientId) {
         return {
           success: false,
-          error: 'Google Client ID is missing. Please provide your Google OAuth 2.0 Client ID (or add VITE_GOOGLE_CLIENT_ID to your .env file).',
+          error: 'Google Client ID is missing. Please provide your Google OAuth 2.0 Client ID (or set VITE_GOOGLE_CLIENT_ID in your .env file).',
         };
       }
 
       if (typeof window === 'undefined' || !(window as any).google?.accounts?.oauth2) {
         return {
           success: false,
-          error: 'Google Identity Services SDK is still loading in your browser. Please try again in a moment.',
+          error: 'Google Identity Services SDK is loading in your browser. Please try again in a few seconds.',
         };
       }
 
       return new Promise((resolve) => {
         const client = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly',
+          scope: GCAL_SCOPES,
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
-              resolve({ success: false, error: tokenResponse.error_description || tokenResponse.error });
+              resolve({ 
+                success: false, 
+                error: tokenResponse.error_description || tokenResponse.error || 'Authorization cancelled or denied.' 
+              });
               return;
             }
             if (tokenResponse.access_token) {
@@ -128,6 +117,34 @@ class GoogleCalendarService {
       });
     } catch (err: any) {
       return { success: false, error: err?.message || 'Failed to authenticate with Google' };
+    }
+  }
+
+  /**
+   * Optional OAuth redirect via Supabase with explicit Google Calendar scopes.
+   */
+  public async connectViaSupabaseOAuth(): Promise<{ success: boolean; error?: string }> {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' };
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: GCAL_SCOPES,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          redirectTo: window.location.href,
+        },
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'OAuth redirect failed' };
     }
   }
 
@@ -157,9 +174,18 @@ class GoogleCalendarService {
       );
 
       if (!response.ok) {
-        if (response.status === 401) {
+        // If scope is missing or token expired, disconnect and prompt re-auth
+        if (response.status === 401 || response.status === 403) {
           this.disconnect();
-          return { success: false, error: 'Google Calendar session has expired. Please reconnect.' };
+          const errJson = await response.json().catch(() => ({}));
+          const detail = errJson.error?.message || 'Access denied';
+          if (detail.toLowerCase().includes('scope') || response.status === 403) {
+            return {
+              success: false,
+              error: 'Google Calendar permission required. Please click "Connect Google Calendar" to grant Calendar access.',
+            };
+          }
+          return { success: false, error: 'Google session expired. Please reconnect.' };
         }
         const errJson = await response.json().catch(() => ({}));
         throw new Error(errJson.error?.message || `Google Calendar API error (${response.status})`);
