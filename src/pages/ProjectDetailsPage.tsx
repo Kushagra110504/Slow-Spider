@@ -13,7 +13,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import { Project, Task, Milestone, ActivityLog, TaskPriority } from '../types/database';
-import { formatTimeAgo } from '../lib/utils';
+import { formatTimeAgo, formatDateTime } from '../lib/utils';
 import { NavTab } from '../components/layout/Sidebar';
 import { AttachmentManager } from '../components/attachments/AttachmentManager';
 import { InviteMemberModal } from '../components/team/InviteMemberModal';
@@ -38,11 +38,18 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
   // Modals & form state
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('normal');
-  const [newTaskDueDate, setNewTaskDueDate] = useState('2026-08-28');
+  const [newTaskDueDate, setNewTaskDueDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newTaskDueTime, setNewTaskDueTime] = useState('17:00');
   const [showAddTask, setShowAddTask] = useState(false);
 
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDesc, setNewMilestoneDesc] = useState('');
+  const [newMilestoneDueDate, setNewMilestoneDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [newMilestoneDueTime, setNewMilestoneDueTime] = useState('17:00');
   const [showAddMilestone, setShowAddMilestone] = useState(false);
 
   const [newComment, setNewComment] = useState('');
@@ -116,13 +123,14 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
+    const fullDueDate = newTaskDueTime ? `${newTaskDueDate}T${newTaskDueTime}` : newTaskDueDate;
     dataService.createTask({
       project_id: project.id,
       title: newTaskTitle.trim(),
       status: 'todo',
       priority: newTaskPriority,
-      due_date: newTaskDueDate,
-      estimate: 'Due soon',
+      due_date: fullDueDate,
+      estimate: `Due ${formatDateTime(fullDueDate)}`,
     }, user || undefined);
     setNewTaskTitle('');
     setShowAddTask(false);
@@ -131,12 +139,13 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
   const handleCreateMilestone = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMilestoneTitle.trim()) return;
+    const fullDueDate = newMilestoneDueTime ? `${newMilestoneDueDate}T${newMilestoneDueTime}` : newMilestoneDueDate;
     dataService.createMilestone({
       project_id: project.id,
       title: newMilestoneTitle.trim(),
       description: newMilestoneDesc.trim() || 'Milestone verification deliverable.',
       status: 'upcoming',
-      due_date: '2026-09-15',
+      due_date: fullDueDate,
     });
     setNewMilestoneTitle('');
     setNewMilestoneDesc('');
@@ -318,11 +327,11 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
                     autoFocus
                     className="w-full bg-vault-card border border-vault-border rounded-lg px-3 py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
                   />
-                  <div className="flex gap-2 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value as TaskPriority)}
-                      className="bg-vault-card border border-vault-border rounded-lg px-2.5 py-1 text-xs text-vault-textPrimary"
+                      className="bg-vault-card border border-vault-border rounded-lg px-2.5 py-1.5 text-xs text-vault-textPrimary"
                     >
                       <option value="critical">Critical</option>
                       <option value="warning">Warning</option>
@@ -333,10 +342,39 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
                       type="date"
                       value={newTaskDueDate}
                       onChange={(e) => setNewTaskDueDate(e.target.value)}
-                      className="bg-vault-card border border-vault-border rounded-lg px-2 py-1 text-xs text-vault-textPrimary"
+                      className="bg-vault-card border border-vault-border rounded-lg px-2 py-1.5 text-xs text-vault-textPrimary"
                     />
-                    <Button variant="primary" size="sm" type="submit" className="ml-auto">
-                      Save
+                    <input
+                      type="time"
+                      value={newTaskDueTime}
+                      onChange={(e) => setNewTaskDueTime(e.target.value)}
+                      className="bg-vault-card border border-vault-border rounded-lg px-2 py-1.5 text-xs text-vault-textPrimary"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex gap-1">
+                      {[
+                        { label: '9 AM', val: '09:00' },
+                        { label: '12 PM', val: '12:00' },
+                        { label: '5 PM', val: '17:00' },
+                        { label: '11:59 PM', val: '23:59' },
+                      ].map(({ label, val }) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setNewTaskDueTime(val)}
+                          className={`text-[10px] px-2 py-0.5 rounded border transition-all cursor-pointer ${
+                            newTaskDueTime === val
+                              ? 'bg-[#00E575]/20 text-[#045E33] dark:text-[#00E575] border-[#00E575]/40 font-bold'
+                              : 'bg-vault-card text-vault-textMuted border-vault-border hover:text-vault-textPrimary'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <Button variant="primary" size="sm" type="submit">
+                      Save Task
                     </Button>
                   </div>
                 </form>
@@ -380,7 +418,7 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
                                 size="xs"
                               />
                               <span className="text-[11px] text-vault-textMuted">
-                                {task.estimate || `Due ${task.due_date}`}
+                                {task.due_date ? `Due ${formatDateTime(task.due_date)}` : (task.estimate || 'No deadline')}
                               </span>
                             </div>
                           </div>
@@ -472,7 +510,21 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
                     onChange={(e) => setNewMilestoneDesc(e.target.value)}
                     className="w-full bg-vault-card border border-vault-border rounded-lg px-3 py-1.5 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
                   />
-                  <div className="flex justify-end gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={newMilestoneDueDate}
+                      onChange={(e) => setNewMilestoneDueDate(e.target.value)}
+                      className="bg-vault-card border border-vault-border rounded-lg px-2.5 py-1.5 text-xs text-vault-textPrimary"
+                    />
+                    <input
+                      type="time"
+                      value={newMilestoneDueTime}
+                      onChange={(e) => setNewMilestoneDueTime(e.target.value)}
+                      className="bg-vault-card border border-vault-border rounded-lg px-2.5 py-1.5 text-xs text-vault-textPrimary"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
                     <Button variant="primary" size="sm" type="submit">
                       Save Milestone
                     </Button>
@@ -509,6 +561,11 @@ export const ProjectDetailsPage: React.FC<ProjectDetailsPageProps> = ({
                           <p className="text-[11px] text-vault-textMuted mt-1 leading-relaxed">
                             {ms.description}
                           </p>
+                          {ms.due_date && (
+                            <p className="text-[10px] text-vault-textMuted mt-1 font-mono">
+                              Due {formatDateTime(ms.due_date)}
+                            </p>
+                          )}
                         </div>
                       </div>
 

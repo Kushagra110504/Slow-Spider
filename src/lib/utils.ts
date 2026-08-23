@@ -16,6 +16,29 @@ export function formatDate(dateString: string | null | undefined): string {
   }).format(date);
 }
 
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const formattedHours = String(hours).padStart(2, '0');
+
+  const hasTime = dateString.includes('T') || (dateString.includes(':') && !dateString.startsWith('20'));
+  if (!hasTime && dateString.length <= 10) {
+    return `${day}/${month}/${year}`;
+  }
+  return `${day}/${month}/${year} - ${formattedHours}:${minutes} ${ampm}`;
+}
+
 export function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();

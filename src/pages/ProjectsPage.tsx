@@ -11,7 +11,7 @@ import { AvatarStack } from '../components/ui/Avatar';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import { Project, ProjectStatus } from '../types/database';
-import { formatDate } from '../lib/utils';
+import { formatDate, formatDateTime } from '../lib/utils';
 import { NavTab } from '../components/layout/Sidebar';
 
 interface ProjectsPageProps {
@@ -269,32 +269,35 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* Grid Layout */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
-              hoverEffect
               onClick={() => onNavigate('project-details', project.id)}
-              className="p-4 sm:p-5 cursor-pointer group relative bg-vault-card border-vault-border flex flex-col justify-between"
+              className="p-5 flex flex-col justify-between hover:border-vault-borderLight hover:shadow-xl transition-all cursor-pointer group bg-vault-card border-vault-border"
             >
               <div>
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-bold text-vault-textPrimary group-hover:text-[#00C966] dark:group-hover:text-[#00E575] transition-colors truncate">
-                    {project.name}
-                  </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <Badge variant="neutral">
+                    {project.team_category}
+                  </Badge>
                   {getStatusBadge(project.status)}
                 </div>
 
-                <p className="text-xs text-vault-textMuted mt-2 line-clamp-2 leading-relaxed">
+                <h3 className="text-base font-bold text-vault-textPrimary mt-3.5 group-hover:text-[#00E575] transition-colors">
+                  {project.name}
+                </h3>
+                <p className="text-xs text-vault-textMuted mt-1.5 line-clamp-2 leading-relaxed">
                   {project.description}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-vault-border space-y-3">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-[11px] font-medium text-vault-textMuted">
+              <div className="mt-5 space-y-3.5">
+                <div>
+                  <div className="flex justify-between items-center text-xs font-medium text-vault-textMuted mb-1.5">
                     <span>Progress</span>
-                    <span className="font-bold text-vault-textPrimary">{project.progress}%</span>
+                    <span>{project.progress}%</span>
                   </div>
                   <ProgressBar
                     value={project.progress}
@@ -304,8 +307,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-vault-textMuted">
-                  <span className="text-[11px]">Due {formatDate(project.due_date)}</span>
+                <div className="flex items-center justify-between text-xs text-vault-textMuted font-mono">
+                  <span className="text-[11px]">Due {formatDateTime(project.due_date)}</span>
                   {project.members && project.members.length > 0 && (
                     <AvatarStack users={project.members} size="xs" max={3} />
                   )}

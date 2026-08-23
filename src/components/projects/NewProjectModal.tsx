@@ -25,6 +25,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [description, setDescription] = useState('');
   const [teamCategory, setTeamCategory] = useState<TeamCategory>('Product team');
   const [dueDate, setDueDate] = useState('2026-09-30');
+  const [dueTime, setDueTime] = useState('17:00');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['BRAND', 'LAUNCH']);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
@@ -69,13 +70,15 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
+    const fullDueDate = dueTime ? `${dueDate}T${dueTime}` : dueDate;
+
     const newProject = dataService.createProject({
       name: name.trim(),
       description: description.trim(),
       owner_id: user?.id || selectedMembers[0]?.id || availableUsers[0]?.id || '',
       status: 'active',
       progress: 0,
-      due_date: dueDate,
+      due_date: fullDueDate,
       team_category: teamCategory,
       tags: tags.length > 0 ? tags : ['NEW PROJECT'],
       members: selectedMembers.length > 0 ? selectedMembers : (user ? [user] : []),
@@ -149,16 +152,45 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-vault-textSecondary mb-1.5">
-              Target Launch Date
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-vault-textSecondary">
+              Target Launch Date & Time
             </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-vault-cardHover border border-vault-border rounded-xl px-3.5 py-2 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-vault-cardHover border border-vault-border rounded-xl px-3 py-2 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
+              />
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-full bg-vault-cardHover border border-vault-border rounded-xl px-3 py-2 text-xs text-vault-textPrimary focus:outline-none focus:border-[#00E575]"
+              />
+            </div>
+            <div className="flex gap-1.5 pt-0.5">
+              {[
+                { label: '9 AM', val: '09:00' },
+                { label: '12 PM', val: '12:00' },
+                { label: '5 PM', val: '17:00' },
+                { label: '11:59 PM', val: '23:59' },
+              ].map(({ label, val }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setDueTime(val)}
+                  className={`text-[10px] px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                    dueTime === val
+                      ? 'bg-[#00E575]/20 text-[#045E33] dark:text-[#00E575] border-[#00E575]/40 font-bold'
+                      : 'bg-vault-cardHover text-vault-textMuted border-vault-border hover:text-vault-textPrimary'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

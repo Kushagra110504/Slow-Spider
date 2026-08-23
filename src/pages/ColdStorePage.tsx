@@ -7,7 +7,7 @@ import { AvatarStack } from '../components/ui/Avatar';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import { Project } from '../types/database';
-import { formatDate } from '../lib/utils';
+import { formatDate, formatDateTime } from '../lib/utils';
 import { NavTab } from '../components/layout/Sidebar';
 
 interface ColdStorePageProps {
@@ -107,9 +107,9 @@ export const ColdStorePage: React.FC<ColdStorePageProps> = () => {
                 <div className="mt-6 space-y-4">
                   {/* Cyan Progress Bar matching Screen 4 */}
                   <div>
-                    <div className="flex justify-between text-xs font-semibold text-vault-textMuted mb-1">
+                    <div className="flex justify-between text-xs font-semibold text-vault-textMuted mb-1 font-mono">
                       <span>{project.progress}% preserved</span>
-                      <span>Due {formatDate(project.due_date)}</span>
+                      <span>Due {formatDateTime(project.due_date)}</span>
                     </div>
                     <ProgressBar
                       value={project.progress}

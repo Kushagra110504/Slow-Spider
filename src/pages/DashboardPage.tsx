@@ -12,7 +12,7 @@ import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import { Project, Task, Milestone } from '../types/database';
 import { NavTab } from '../components/layout/Sidebar';
-import { formatDate } from '../lib/utils';
+import { formatDate, formatDateTime } from '../lib/utils';
 
 interface DashboardPageProps {
   onNavigate: (tab: NavTab, projectId?: string) => void;
@@ -303,8 +303,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           >
                             {task.title}
                           </p>
-                          <p className="text-[11px] text-vault-textMuted mt-0.5">
-                            {task.estimate || `Due ${task.due_date}`}
+                          <p className="text-[11px] text-vault-textMuted mt-0.5 font-mono">
+                            {task.due_date ? `Due ${formatDateTime(task.due_date)}` : (task.estimate || 'No deadline')}
                           </p>
                         </div>
                       </div>
