@@ -243,7 +243,7 @@ class DataService {
   }
 
   // --- SUPABASE CLOUD SYNC & REALTIME SUBSCRIPTIONS ---
-  private async syncWithSupabase() {
+  public async syncWithSupabase(_user?: User | null) {
     if (!supabase) return;
     try {
       // 1. Sync real Users from Supabase public.users
@@ -293,6 +293,42 @@ class DataService {
         this.notify();
       }
 
+      // 6. Sync User Connections
+      const { data: dbConns, error: cErr } = await supabase.from('user_connections').select('*');
+      if (!cErr && dbConns) {
+        const existingConns = this.getConnections();
+        const combined = [...existingConns];
+        const allUsers = this.getUsers();
+        
+        dbConns.forEach((c: any) => {
+          const reqUser = allUsers.find(u => u.id === c.requester_id);
+          const recUser = allUsers.find(u => u.id === c.recipient_id);
+          const formatted: UserConnection = {
+            id: c.id,
+            requester_id: c.requester_id,
+            requester_name: reqUser?.name || c.requester_name || 'Member',
+            requester_avatar: reqUser?.avatar_url || c.requester_avatar,
+            requester_email: reqUser?.email || c.requester_email,
+            recipient_id: c.recipient_id,
+            recipient_name: recUser?.name || c.recipient_name || 'Member',
+            recipient_avatar: recUser?.avatar_url || c.recipient_avatar,
+            recipient_email: recUser?.email || c.recipient_email,
+            status: c.status,
+            created_at: c.created_at || new Date().toISOString(),
+            updated_at: c.updated_at || new Date().toISOString(),
+          };
+
+          const idx = combined.findIndex(x => x.id === c.id || (x.requester_id === c.requester_id && x.recipient_id === c.recipient_id));
+          if (idx !== -1) {
+            combined[idx] = { ...combined[idx], ...formatted };
+          } else {
+            combined.unshift(formatted);
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(combined));
+        this.notify();
+      }
+
       // Realtime channel subscriptions
       supabase
         .channel('projectvault-realtime')
@@ -310,6 +346,15 @@ class DataService {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'inbox_items' }, (payload) => {
           this.handleRealtimeInboxChange(payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_connections' }, (payload) => {
+          this.handleRealtimeConnectionChange(payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_invitations' }, (payload) => {
+          this.handleRealtimeInvitationChange(payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+          this.handleRealtimeNotificationChange(payload);
         })
         .subscribe();
     } catch (err) {
@@ -335,6 +380,71 @@ class DataService {
       return;
     }
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(all));
+    this.notify();
+  }
+
+  private handleRealtimeConnectionChange(payload: any) {
+    if (!payload.new && payload.eventType !== 'DELETE') return;
+    const all = this.getConnections();
+    if (payload.eventType === 'INSERT') {
+      if (!all.some(c => c.id === payload.new.id)) {
+        const reqUser = this.getUserById(payload.new.requester_id);
+        const recUser = this.getUserById(payload.new.recipient_id);
+        all.unshift({
+          ...payload.new,
+          requester_name: reqUser?.name || 'Member',
+          requester_avatar: reqUser?.avatar_url,
+          requester_email: reqUser?.email,
+          recipient_name: recUser?.name || 'Member',
+          recipient_avatar: recUser?.avatar_url,
+          recipient_email: recUser?.email,
+        });
+      }
+    } else if (payload.eventType === 'UPDATE') {
+      const idx = all.findIndex(c => c.id === payload.new.id);
+      if (idx !== -1) all[idx] = { ...all[idx], ...payload.new };
+      else all.unshift(payload.new);
+    } else if (payload.eventType === 'DELETE') {
+      const filtered = all.filter(c => c.id !== payload.old.id);
+      localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(filtered));
+      this.notify();
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(all));
+    this.notify();
+  }
+
+  private handleRealtimeInvitationChange(payload: any) {
+    const all = this.getTeamInvitations();
+    if (payload.eventType === 'INSERT') {
+      if (!all.some(i => i.id === payload.new.id)) all.unshift(payload.new);
+    } else if (payload.eventType === 'UPDATE') {
+      const idx = all.findIndex(i => i.id === payload.new.id);
+      if (idx !== -1) all[idx] = payload.new;
+    } else if (payload.eventType === 'DELETE') {
+      const filtered = all.filter(i => i.id !== payload.old.id);
+      localStorage.setItem(STORAGE_KEYS.INVITATIONS, JSON.stringify(filtered));
+      this.notify();
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.INVITATIONS, JSON.stringify(all));
+    this.notify();
+  }
+
+  private handleRealtimeNotificationChange(payload: any) {
+    const all = this.getNotifications();
+    if (payload.eventType === 'INSERT') {
+      if (!all.some(n => n.id === payload.new.id)) all.unshift(payload.new);
+    } else if (payload.eventType === 'UPDATE') {
+      const idx = all.findIndex(n => n.id === payload.new.id);
+      if (idx !== -1) all[idx] = payload.new;
+    } else if (payload.eventType === 'DELETE') {
+      const filtered = all.filter(n => n.id !== payload.old.id);
+      localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(filtered));
+      this.notify();
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(all));
     this.notify();
   }
 
@@ -894,17 +1004,38 @@ class DataService {
     return network;
   }
 
-  public sendConnectionRequest(recipientId: string, currentUser: User): { success: boolean; error?: string } {
+  public sendConnectionRequest(target: User | string, currentUser: User): { success: boolean; error?: string } {
     if (!currentUser) return { success: false, error: 'You must be logged in.' };
-    if (recipientId === currentUser.id) return { success: false, error: 'Cannot connect with yourself.' };
 
-    const recipient = this.getUserById(recipientId);
-    if (!recipient) return { success: false, error: 'User not found.' };
+    let recipient: User | undefined;
+    let targetEmail = '';
+
+    if (typeof target === 'string') {
+      const trimmed = target.trim();
+      recipient = this.getUserById(trimmed) || this.getUserByEmail(trimmed);
+      if (!recipient && trimmed.includes('@')) {
+        targetEmail = trimmed.toLowerCase();
+      } else if (!recipient) {
+        return { success: false, error: `User "${trimmed}" not found. Please enter a valid email address.` };
+      }
+    } else {
+      recipient = target;
+    }
+
+    if (recipient) {
+      targetEmail = recipient.email.toLowerCase();
+      if (recipient.id === currentUser.id || recipient.email.toLowerCase() === currentUser.email.toLowerCase()) {
+        return { success: false, error: 'Cannot connect with yourself.' };
+      }
+    } else if (targetEmail && targetEmail === currentUser.email.toLowerCase()) {
+      return { success: false, error: 'Cannot connect with yourself.' };
+    }
 
     const all = this.getConnections();
     const existing = all.find(c => 
-      (c.requester_id === currentUser.id && c.recipient_id === recipientId) ||
-      (c.requester_id === recipientId && c.recipient_id === currentUser.id)
+      (recipient && ((c.requester_id === currentUser.id && c.recipient_id === recipient.id) || (c.requester_id === recipient.id && c.recipient_id === currentUser.id))) ||
+      (targetEmail && ((c.requester_email?.toLowerCase() === currentUser.email.toLowerCase() && c.recipient_email?.toLowerCase() === targetEmail) ||
+       (c.requester_email?.toLowerCase() === targetEmail && c.recipient_email?.toLowerCase() === currentUser.email.toLowerCase())))
     );
 
     if (existing) {
@@ -912,7 +1043,7 @@ class DataService {
         return { success: false, error: 'You are already connected with this user.' };
       }
       if (existing.status === 'pending') {
-        if (existing.requester_id === currentUser.id) {
+        if (existing.requester_id === currentUser.id || existing.requester_email?.toLowerCase() === currentUser.email.toLowerCase()) {
           return { success: false, error: 'Connection request already sent and pending.' };
         } else {
           // If the other user already sent a request, auto-accept it!
@@ -928,10 +1059,10 @@ class DataService {
       requester_name: currentUser.name,
       requester_avatar: currentUser.avatar_url,
       requester_email: currentUser.email,
-      recipient_id: recipient.id,
-      recipient_name: recipient.name,
-      recipient_avatar: recipient.avatar_url,
-      recipient_email: recipient.email,
+      recipient_id: recipient?.id || `pending-email-${Date.now()}`,
+      recipient_name: recipient?.name || targetEmail.split('@')[0],
+      recipient_avatar: recipient?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(targetEmail.split('@')[0])}`,
+      recipient_email: targetEmail,
       status: 'pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -944,21 +1075,23 @@ class DataService {
       safeSupabaseCall(supabase.from('user_connections').insert([{
         id: newConnection.id,
         requester_id: newConnection.requester_id,
-        recipient_id: newConnection.recipient_id,
+        recipient_id: recipient?.id || null,
         status: newConnection.status,
         created_at: newConnection.created_at,
         updated_at: newConnection.updated_at,
       }]));
     }
 
-    // Send interactive notification to recipient
-    this.sendNotification({
-      user_id: recipient.id,
-      title: 'New Connection Request',
-      message: `${currentUser.name} wants to connect with you on Slow Spider.`,
-      type: 'info',
-      connection_id: newConnection.id,
-    });
+    // Send interactive notification to recipient if known
+    if (recipient) {
+      this.sendNotification({
+        user_id: recipient.id,
+        title: 'New Connection Request',
+        message: `${currentUser.name} wants to connect with you on Slow Spider.`,
+        type: 'info',
+        connection_id: newConnection.id,
+      });
+    }
 
     this.notify();
     return { success: true };
@@ -1036,11 +1169,56 @@ class DataService {
         if (!conn) return { user: u, connectionStatus: 'none' as const };
         if (conn.status === 'accepted') return { user: u, connectionStatus: 'connected' as const };
         if (conn.status === 'pending') {
-          if (currentUser && conn.requester_id === currentUser.id) return { user: u, connectionStatus: 'pending_sent' as const };
+          if (currentUser && (conn.requester_id === currentUser.id || conn.requester_email?.toLowerCase() === currentUser.email.toLowerCase())) {
+            return { user: u, connectionStatus: 'pending_sent' as const };
+          }
           return { user: u, connectionStatus: 'pending_received' as const };
         }
         return { user: u, connectionStatus: 'none' as const };
       });
+  }
+
+  public async searchUsersAsync(query: string, currentUser?: User | null): Promise<{ user: User; connectionStatus: 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'self' }[]> {
+    const normalizedQuery = query.toLowerCase().trim();
+    if (!normalizedQuery) return [];
+
+    // Live query from Supabase
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: dbUsers, error } = await supabase
+          .from('users')
+          .select('*')
+          .or(`name.ilike.%${normalizedQuery}%,email.ilike.%${normalizedQuery}%`)
+          .limit(25);
+
+        if (!error && dbUsers && dbUsers.length > 0) {
+          const existing = this.getUsers();
+          const combined = [...existing];
+          let updated = false;
+
+          dbUsers.forEach((u: User) => {
+            if (!isMockUser(u)) {
+              const idx = combined.findIndex(c => c.id === u.id || c.email.toLowerCase() === u.email.toLowerCase());
+              if (idx !== -1) {
+                combined[idx] = { ...combined[idx], ...u };
+              } else {
+                combined.push(u);
+                updated = true;
+              }
+            }
+          });
+
+          if (updated) {
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(combined));
+            this.notify();
+          }
+        }
+      } catch (err) {
+        console.warn('Live user search warning:', err);
+      }
+    }
+
+    return this.searchUsersToConnect(query, currentUser);
   }
 
   // --- TASKS (USER SCOPED) ---

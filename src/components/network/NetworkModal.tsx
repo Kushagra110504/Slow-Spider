@@ -11,6 +11,8 @@ import { dataService } from '../../services/dataService';
 import { User, UserConnection } from '../../types/database';
 import { formatDate } from '../../lib/utils';
 
+import { Validation } from '../../lib/validation';
+
 interface NetworkModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +28,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
   const [activeTab, setActiveTab] = useState<'network' | 'requests' | 'find'>(initialTab);
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ user: User; connectionStatus: 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'self' }[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -38,8 +42,38 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
       setConnections(dataService.getConnections(user));
     };
     update();
+    // Synchronize latest database state on modal open
+    dataService.syncWithSupabase(user);
     return dataService.subscribe(update);
   }, [isOpen, user]);
+
+  // Debounced Live User Search
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!user || !trimmed) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // 1. Instant local search feedback
+    setSearchResults(dataService.searchUsersToConnect(trimmed, user));
+    setIsSearching(true);
+
+    // 2. Debounced live database query
+    const timer = setTimeout(async () => {
+      try {
+        const liveResults = await dataService.searchUsersAsync(trimmed, user);
+        setSearchResults(liveResults);
+      } catch (err) {
+        console.warn('Search query error', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, user, connections]);
 
   const acceptedConnections = useMemo(() => {
     return connections.filter(c => c.status === 'accepted');
@@ -57,25 +91,31 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
     if (!user) return [];
     return connections.filter(c => 
       c.status === 'pending' && 
-      c.requester_id === user.id
+      (c.requester_id === user.id || (c.requester_email && c.requester_email.toLowerCase() === user.email.toLowerCase()))
     );
   }, [connections, user]);
-
-  const searchResults = useMemo(() => {
-    if (!user || !searchQuery.trim()) return [];
-    return dataService.searchUsersToConnect(searchQuery, user);
-  }, [searchQuery, user, connections]);
 
   const showStatus = (text: string, type: 'success' | 'error' = 'success') => {
     setStatusMessage({ text, type });
     setTimeout(() => setStatusMessage(null), 3500);
   };
 
-  const handleSendRequest = (targetUser: User) => {
+  const handleSendRequest = (target: User | string) => {
     if (!user) return;
-    const res = dataService.sendConnectionRequest(targetUser.id, user);
+    if (typeof target === 'string') {
+      const emailValidation = Validation.validateEmail(target);
+      if (!emailValidation.isValid) {
+        showStatus(emailValidation.error || 'Please enter a valid email address.', 'error');
+        return;
+      }
+    }
+    const res = dataService.sendConnectionRequest(target, user);
     if (res.success) {
-      showStatus(`Connection request sent to ${targetUser.name}!`);
+      const name = typeof target === 'string' ? target : target.name;
+      showStatus(`Connection request sent to ${name}!`);
+      if (typeof target === 'string') {
+        setSearchQuery('');
+      }
     } else {
       showStatus(res.error || 'Failed to send request.', 'error');
     }
@@ -344,24 +384,62 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({
               <input
                 type="text"
                 autoFocus
-                placeholder="Search colleagues by full name or email..."
+                placeholder="Search colleagues by full name or email address..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] transition-colors"
+                className="w-full bg-vault-cardHover border border-vault-border rounded-xl pl-10 pr-10 py-2.5 text-xs text-vault-textPrimary placeholder-vault-textMuted focus:outline-none focus:border-[#00E575] transition-colors"
               />
+              {isSearching && (
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-[#00E575] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
 
             {/* Search Results */}
             {searchQuery.trim() === '' ? (
-              <div className="p-6 text-center text-vault-textMuted text-xs space-y-1">
-                <p>Type a colleague's name above to find and add them to your Slow Spider network.</p>
-                <p className="text-[11px] text-vault-textMuted/70">
-                  Once connected, you will be able to add them to your project teams and assign tasks.
+              <div className="p-6 text-center text-vault-textMuted text-xs space-y-1 bg-vault-cardHover/30 rounded-2xl border border-vault-border">
+                <p className="font-semibold text-vault-textSecondary">Find and connect with colleagues across Slow Spider.</p>
+                <p className="text-[11px] text-vault-textMuted">
+                  Type their full name or email address. Once connected, you can add them to project teams and assign tasks.
                 </p>
               </div>
             ) : searchResults.length === 0 ? (
-              <div className="p-6 text-center text-vault-textMuted text-xs">
-                No users found matching "{searchQuery}". Make sure their account is registered.
+              <div className="space-y-3">
+                <div className="p-5 text-center text-vault-textMuted text-xs rounded-2xl bg-vault-cardHover/50 border border-vault-border space-y-1">
+                  <p className="text-vault-textSecondary font-semibold">
+                    {isSearching ? 'Searching across database...' : `No registered users found matching "${searchQuery}".`}
+                  </p>
+                  <p className="text-[11px] text-vault-textMuted">
+                    Make sure their account is registered or invite them directly below.
+                  </p>
+                </div>
+
+                {/* Direct Invite / Connect by Email Card */}
+                {searchQuery.trim().includes('@') ? (
+                  <div className="p-4 rounded-2xl bg-[#00E575]/10 border border-[#00E575]/30 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-vault-textPrimary">
+                      <UserPlus className="w-4 h-4 text-[#00E575]" />
+                      <span>Send Direct Connection Request</span>
+                    </div>
+                    <p className="text-[11px] text-vault-textMuted leading-relaxed">
+                      Send a pending connection request to <strong className="text-vault-textPrimary font-mono">{searchQuery.trim()}</strong>. When they sign in or join Slow Spider, they will immediately see your invitation in their Requests tab.
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleSendRequest(searchQuery.trim())}
+                      className="w-full justify-center mt-2 font-bold"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                      <span>Send Connection Request to {searchQuery.trim()}</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-3 text-center text-[11px] text-vault-textMuted bg-vault-card rounded-xl border border-vault-border">
+                    💡 <em>Tip: You can enter a colleague's complete email address (e.g. <span className="font-mono text-vault-textPrimary">name@company.com</span>) to send them a direct connection invite!</em>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">

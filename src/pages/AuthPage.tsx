@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
+import { Validation } from '../lib/validation';
+
 interface AuthPageProps {
   onBackToHome?: () => void;
   initialMode?: 'signin' | 'signup';
@@ -38,6 +40,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Client-side email validation
+    const emailValidation = Validation.validateEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Please enter a valid email address.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -47,8 +57,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         if (!name.trim()) {
           throw new Error('Please enter your full name.');
         }
-        if (password.length < 6) {
-          throw new Error('Password must be at least 6 characters long.');
+        if (password.length < 8) {
+          throw new Error('Password must be at least 8 characters long.');
         }
         await signup(email, password, name, 'user');
       }

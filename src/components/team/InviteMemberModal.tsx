@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Project } from '../../types/database';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
+import { Validation } from '../../lib/validation';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -34,8 +35,9 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     setIsLoading(true);
 
     try {
-      if (!email.trim() || !email.includes('@')) {
-        throw new Error('Please enter a valid email address.');
+      const emailValidation = Validation.validateEmail(email.trim());
+      if (!emailValidation.isValid) {
+        throw new Error(emailValidation.error || 'Please enter a valid email address.');
       }
       dataService.createTeamInvitation(project.id, email.trim(), user, role);
       setSuccess(`Invitation sent to ${email.trim()}! Once they accept, they will see "${project.name}" in their workspace.`);

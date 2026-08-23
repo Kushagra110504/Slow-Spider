@@ -2,6 +2,38 @@
  * ProjectVault - Centralized Input Validation & Sanitization Module
  */
 
+// Common disposable, mock, and placeholder email domains that are not permitted
+const DISALLOWED_EMAIL_DOMAINS = new Set([
+  'test.com',
+  'test.org',
+  'test.net',
+  'test.io',
+  'test.co',
+  'example.com',
+  'example.org',
+  'example.net',
+  'sample.com',
+  'dummy.com',
+  'fake.com',
+  'fakeinbox.com',
+  'tempmail.com',
+  'temp-mail.org',
+  '10minutemail.com',
+  'mailinator.com',
+  'yopmail.com',
+  'guerrillamail.com',
+  'throwawaymail.com',
+  'sharklasers.com',
+  'trashmail.com',
+  'dispostable.com',
+  'getairmail.com',
+  'burnermail.io',
+  'abc.com',
+  'xyz.com',
+  'domain.com',
+  'email.com',
+]);
+
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
@@ -10,16 +42,43 @@ export interface ValidationResult {
 export const Validation = {
   /**
    * Validates and normalizes email addresses.
+   * Rejects invalid formats, missing TLDs, and known dummy/disposable domains (e.g. test.com).
    */
   validateEmail(email: string): ValidationResult {
     const trimmed = email.trim();
     if (!trimmed) {
       return { isValid: false, error: 'Email address is required.' };
     }
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    // Standard RFC-compliant email structure with legitimate TLD
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
     if (!emailRegex.test(trimmed) || trimmed.length > 254) {
+      return { isValid: false, error: 'Please enter a valid email address format.' };
+    }
+
+    const parts = trimmed.split('@');
+    if (parts.length !== 2) {
       return { isValid: false, error: 'Please enter a valid email address.' };
     }
+
+    const domain = parts[1].toLowerCase().trim();
+
+    // Disallow known dummy, test, and disposable domains
+    if (
+      DISALLOWED_EMAIL_DOMAINS.has(domain) ||
+      domain.startsWith('test.') ||
+      domain.startsWith('example.') ||
+      domain.endsWith('.test') ||
+      domain.endsWith('.example') ||
+      domain.endsWith('.invalid') ||
+      domain.endsWith('.localhost')
+    ) {
+      return { 
+        isValid: false, 
+        error: `"${domain}" is not a valid email service provider. Please enter a valid personal or corporate email address (e.g., gmail.com, outlook.com, or your work domain).` 
+      };
+    }
+
     return { isValid: true };
   },
 

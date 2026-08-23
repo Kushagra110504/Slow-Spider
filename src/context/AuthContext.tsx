@@ -114,6 +114,13 @@ let failedAttempts = 0;
 let lockoutExpiry = 0;
 
   const login = async (email: string, password: string): Promise<void> => {
+    // Input Schema Validation
+    const emailVal = Validation.validateEmail(email);
+    if (!emailVal.isValid) throw new Error(emailVal.error);
+
+    const passVal = Validation.validatePassword(password);
+    if (!passVal.isValid) throw new Error(passVal.error);
+
     // Check Brute-force Throttling Lockout
     if (Date.now() < lockoutExpiry) {
       const remainingSec = Math.ceil((lockoutExpiry - Date.now()) / 1000);
@@ -133,6 +140,7 @@ let lockoutExpiry = 0;
             setUser(localCheck.user);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(localCheck.user));
             localStorage.setItem(AUTH_SESSION_KEY, `local-jwt-${Date.now()}`);
+            dataService.syncWithSupabase(localCheck.user);
             return;
           }
           failedAttempts++;
@@ -160,6 +168,7 @@ let lockoutExpiry = 0;
           setUser(appUser);
           localStorage.setItem(AUTH_USER_KEY, JSON.stringify(appUser));
           localStorage.setItem(AUTH_SESSION_KEY, data.session?.access_token || 'active');
+          dataService.syncWithSupabase(appUser);
           return;
         }
       }
@@ -179,6 +188,7 @@ let lockoutExpiry = 0;
       setUser(result.user);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
       localStorage.setItem(AUTH_SESSION_KEY, `local-jwt-${Date.now()}`);
+      dataService.syncWithSupabase(result.user);
     } finally {
       setIsLoading(false);
     }
@@ -220,6 +230,7 @@ let lockoutExpiry = 0;
           setUser(newUser);
           localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUser));
           localStorage.setItem(AUTH_SESSION_KEY, data.session?.access_token || 'active');
+          dataService.syncWithSupabase(newUser);
           return;
         }
       }
@@ -233,6 +244,7 @@ let lockoutExpiry = 0;
       setUser(result.user);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
       localStorage.setItem(AUTH_SESSION_KEY, `local-jwt-${Date.now()}`);
+      dataService.syncWithSupabase(result.user);
     } finally {
       setIsLoading(false);
     }
