@@ -18,6 +18,7 @@ function AuthenticatedApp() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-1');
   const [publicView, setPublicView] = useState<'landing' | 'auth'>('landing');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('pv_theme');
@@ -103,6 +104,9 @@ function AuthenticatedApp() {
       onNavigateToProject={handleNavigateToProject}
       isDarkMode={isDarkMode}
       onToggleDarkMode={handleToggleDarkMode}
+      isNewProjectOpen={isNewProjectOpen}
+      onOpenNewProject={() => setIsNewProjectOpen(true)}
+      onCloseNewProject={() => setIsNewProjectOpen(false)}
     >
       {currentTab === 'dashboard' && (
         <DashboardPage onNavigate={handleNavigate} />
@@ -111,10 +115,7 @@ function AuthenticatedApp() {
       {currentTab === 'projects' && (
         <ProjectsPage
           onNavigate={handleNavigate}
-          onOpenNewProject={() => {
-            const btn = document.querySelector('button[title*="New Project"]') as HTMLButtonElement | null;
-            if (btn) btn.click();
-          }}
+          onOpenNewProject={() => setIsNewProjectOpen(true)}
         />
       )}
 

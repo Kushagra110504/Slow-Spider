@@ -20,6 +20,9 @@ interface AppLayoutProps {
   children: React.ReactNode;
   isDarkMode?: boolean;
   onToggleDarkMode?: (val?: boolean) => void;
+  isNewProjectOpen?: boolean;
+  onOpenNewProject?: () => void;
+  onCloseNewProject?: () => void;
 }
 
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +35,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   isDarkMode: propIsDarkMode,
   onToggleDarkMode: propOnToggleDarkMode,
+  isNewProjectOpen: propIsNewProjectOpen,
+  onOpenNewProject: propOnOpenNewProject,
+  onCloseNewProject: propOnCloseNewProject,
 }) => {
   const { user } = useAuth();
   const [internalDarkMode, setInternalDarkMode] = useState<boolean>(() => {
@@ -44,7 +50,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
-  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
+  const [internalNewProjectOpen, setInternalNewProjectOpen] = useState(false);
+  const isNewProjectOpen = propIsNewProjectOpen !== undefined ? propIsNewProjectOpen : internalNewProjectOpen;
+
+  const handleOpenNewProject = () => {
+    if (propOnOpenNewProject) propOnOpenNewProject();
+    else setInternalNewProjectOpen(true);
+  };
+
+  const handleCloseNewProject = () => {
+    if (propOnCloseNewProject) propOnCloseNewProject();
+    else setInternalNewProjectOpen(false);
+  };
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNetworkOpen, setIsNetworkOpen] = useState(false);
 
@@ -148,7 +166,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <Navbar
           onOpenSearch={() => setIsSearchOpen(true)}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
-          onOpenNewProject={() => setIsNewProjectOpen(true)}
+          onOpenNewProject={handleOpenNewProject}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenNetwork={() => setIsNetworkOpen(true)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
@@ -204,7 +222,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* New Project Modal */}
       <NewProjectModal
         isOpen={isNewProjectOpen}
-        onClose={() => setIsNewProjectOpen(false)}
+        onClose={handleCloseNewProject}
         onProjectCreated={handleCreatedProject}
         onOpenNetwork={() => setIsNetworkOpen(true)}
       />

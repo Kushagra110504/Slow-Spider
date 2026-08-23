@@ -177,8 +177,12 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
       {/* Projects List / Grid View */}
       {filteredProjects.length === 0 ? (
-        <div className="p-12 text-center text-vault-textMuted bg-vault-card border border-vault-border rounded-2xl">
+        <div className="p-12 text-center text-vault-textMuted bg-vault-card border border-vault-border rounded-2xl space-y-3">
           <p className="text-sm font-medium">No active projects match your filters.</p>
+          <Button variant="secondary" size="sm" onClick={onOpenNewProject} className="text-[#00C966] dark:text-[#00E575] hover:border-[#00E575]/50">
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Create Project
+          </Button>
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-3.5">
