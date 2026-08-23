@@ -1636,16 +1636,23 @@ class DataService {
     this.notify();
   }
 
-  public convertInboxItemToTask(inboxId: string, projectId: string, priority: TaskPriority = 'normal', user?: User | null): Task | null {
+  public convertInboxItemToTask(
+    inboxId: string, 
+    projectId: string, 
+    priority: TaskPriority = 'normal', 
+    dueDate?: string,
+    user?: User | null
+  ): Task | null {
     const item = this.getInboxItems(user).find(i => i.id === inboxId);
     if (!item) return null;
+    const defaultDue = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
     const task = this.createTask({
       project_id: projectId,
       title: item.title,
       description: item.content,
       status: 'todo',
       priority,
-      due_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
+      due_date: dueDate || defaultDue,
       assignee_id: user?.id,
       assignee: user || undefined,
     }, user);
@@ -1653,18 +1660,44 @@ class DataService {
     return task;
   }
 
-  public convertInboxItemToProject(inboxId: string, teamCategory: TeamCategory = 'Product team', user?: User | null): Project | null {
+  public convertInboxItemToMilestone(
+    inboxId: string, 
+    projectId: string, 
+    dueDate?: string, 
+    user?: User | null
+  ): Milestone | null {
     const item = this.getInboxItems(user).find(i => i.id === inboxId);
     if (!item) return null;
+    const defaultDue = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+    const milestone = this.createMilestone({
+      project_id: projectId,
+      title: item.title,
+      description: item.content || 'Milestone verification deliverable.',
+      status: 'upcoming',
+      due_date: dueDate || defaultDue,
+    });
+    this.deleteInboxItem(inboxId);
+    return milestone;
+  }
+
+  public convertInboxItemToProject(
+    inboxId: string, 
+    teamCategory: TeamCategory = 'Product team', 
+    dueDate?: string,
+    user?: User | null
+  ): Project | null {
+    const item = this.getInboxItems(user).find(i => i.id === inboxId);
+    if (!item) return null;
+    const defaultDue = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
     const project = this.createProject({
       name: item.title,
       description: item.content || '',
       owner_id: user?.id || '',
       status: 'active',
       progress: 0,
-      due_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().split('T')[0],
+      due_date: dueDate || defaultDue,
       team_category: teamCategory,
-      tags: ['NEW'],
+      tags: ['NEW PROJECT'],
       members: user ? [user] : [],
     }, user);
     this.deleteInboxItem(inboxId);

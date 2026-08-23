@@ -15,8 +15,8 @@ export type TeamCategory = 'Design team' | 'Product team' | 'Engineering team' |
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'critical' | 'warning' | 'normal' | 'info';
 export type MilestoneStatus = 'done' | 'upcoming' | 'overdue';
-export type InboxType = 'IDEA' | 'TASK' | 'NOTE' | 'PROJECT';
-export type InboxItemType = 'TASK' | 'PROJECT' | 'IDEA' | 'NOTE';
+export type InboxType = 'IDEA' | 'TASK' | 'MILESTONE' | 'PROJECT';
+export type InboxItemType = 'IDEA' | 'TASK' | 'MILESTONE' | 'PROJECT';
 export type InboxItemStatus = 'inbox' | 'converted' | 'archived';
 
 export interface Project {
