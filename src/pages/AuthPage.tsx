@@ -1,24 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Lock, Mail, User as UserIcon, 
-  ArrowRight, ShieldCheck, AlertCircle, Info 
+  ArrowRight, ShieldCheck, AlertCircle, Info,
+  Sun, Moon 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
 interface AuthPageProps {
   onBackToHome?: () => void;
+  initialMode?: 'signin' | 'signup';
+  isDarkMode?: boolean;
+  onToggleDarkMode?: (val?: boolean) => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({
+  onBackToHome,
+  initialMode = 'signin',
+  isDarkMode,
+  onToggleDarkMode,
+}) => {
   const { login, signup, loginWithGoogle } = useAuth();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGoogleNotice, setShowGoogleNotice] = useState(false);
+
+  useEffect(() => {
+    setMode(initialMode);
+    setError(null);
+    setShowGoogleNotice(false);
+  }, [initialMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,9 +78,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome }) => {
       {onBackToHome && (
         <button
           onClick={onBackToHome}
-          className="absolute top-6 left-6 text-xs font-semibold text-vault-textMuted hover:text-vault-textPrimary flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-card hover:bg-vault-cardHover border border-vault-border transition-all cursor-pointer"
+          className="absolute top-6 left-6 text-xs font-semibold text-vault-textMuted hover:text-vault-textPrimary flex items-center gap-2 px-3 py-1.5 rounded-xl bg-vault-card hover:bg-vault-cardHover border border-vault-border transition-all cursor-pointer shadow-sm"
         >
           <span>← Back to Slow Spider Home</span>
+        </button>
+      )}
+
+      {/* Theme Toggle Trigger */}
+      {onToggleDarkMode && (
+        <button
+          onClick={() => onToggleDarkMode()}
+          className="absolute top-6 right-6 p-2 rounded-xl text-vault-textMuted hover:text-vault-textPrimary hover:bg-vault-cardHover border border-vault-border transition-colors cursor-pointer shadow-sm"
+          title="Toggle Theme"
+        >
+          {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
         </button>
       )}
 
@@ -244,6 +270,33 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome }) => {
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </form>
+
+          {/* Mode Switch Helper */}
+          <div className="mt-5 text-center text-xs text-vault-textMuted">
+            {mode === 'signup' ? (
+              <span>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('signin'); setError(null); setShowGoogleNotice(false); }}
+                  className="font-bold text-[#045E33] dark:text-[#00E575] hover:underline cursor-pointer"
+                >
+                  Sign In to Workspace
+                </button>
+              </span>
+            ) : (
+              <span>
+                Don't have an account yet?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('signup'); setError(null); setShowGoogleNotice(false); }}
+                  className="font-bold text-[#045E33] dark:text-[#00E575] hover:underline cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Security Indicator */}

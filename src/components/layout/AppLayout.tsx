@@ -17,6 +17,8 @@ interface AppLayoutProps {
   selectedProjectId?: string;
   onNavigateToProject: (projectId: string) => void;
   children: React.ReactNode;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: (val?: boolean) => void;
 }
 
 import { useAuth } from '../../context/AuthContext';
@@ -27,12 +29,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   selectedProjectId,
   onNavigateToProject,
   children,
+  isDarkMode: propIsDarkMode,
+  onToggleDarkMode: propOnToggleDarkMode,
 }) => {
   const { user } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+  const [internalDarkMode, setInternalDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('pv_theme');
     return saved !== null ? saved === 'dark' : true;
   });
+
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : internalDarkMode;
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -100,7 +106,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const handleToggleDarkMode = (val?: boolean) => {
-    setIsDarkMode(prev => typeof val === 'boolean' ? val : !prev);
+    if (propOnToggleDarkMode) {
+      propOnToggleDarkMode(val);
+    } else {
+      setInternalDarkMode(prev => typeof val === 'boolean' ? val : !prev);
+    }
   };
 
   const handleCreatedProject = (project: Project) => {

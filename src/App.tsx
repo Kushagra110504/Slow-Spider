@@ -17,11 +17,28 @@ function AuthenticatedApp() {
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('proj-1');
   const [publicView, setPublicView] = useState<'landing' | 'auth'>('landing');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('pv_theme');
     return saved !== null ? saved === 'dark' : true;
   });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.body.classList.add('dark');
+      document.body.classList.remove('light');
+      localStorage.setItem('pv_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.body.classList.remove('dark');
+      document.body.classList.add('light');
+      localStorage.setItem('pv_theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const handleToggleDarkMode = (val?: boolean) => {
     setIsDarkMode(prev => typeof val === 'boolean' ? val : !prev);
@@ -37,12 +54,25 @@ function AuthenticatedApp() {
 
   if (!isAuthenticated) {
     if (publicView === 'auth') {
-      return <AuthPage onBackToHome={() => setPublicView('landing')} />;
+      return (
+        <AuthPage
+          initialMode={authMode}
+          onBackToHome={() => setPublicView('landing')}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={handleToggleDarkMode}
+        />
+      );
     }
     return (
       <LandingPage
-        onStartNow={() => setPublicView('auth')}
-        onSignIn={() => setPublicView('auth')}
+        onStartNow={() => {
+          setAuthMode('signup');
+          setPublicView('auth');
+        }}
+        onSignIn={() => {
+          setAuthMode('signin');
+          setPublicView('auth');
+        }}
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
       />
@@ -71,6 +101,8 @@ function AuthenticatedApp() {
       onSelectTab={(tab) => handleNavigate(tab)}
       selectedProjectId={selectedProjectId}
       onNavigateToProject={handleNavigateToProject}
+      isDarkMode={isDarkMode}
+      onToggleDarkMode={handleToggleDarkMode}
     >
       {currentTab === 'dashboard' && (
         <DashboardPage onNavigate={handleNavigate} />
