@@ -392,3 +392,21 @@ CREATE POLICY "Participants can update connection status"
 CREATE POLICY "Participants can delete connections"
   ON public.user_connections FOR DELETE
   USING (auth.uid() = requester_id OR auth.uid() = recipient_id);
+
+-- 12. Deadline Reminders Tracking Table (Prevents Duplicate 24h, 12h, 1h Email Alerts)
+CREATE TABLE IF NOT EXISTS public.deadline_reminders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'milestone', 'project')),
+  entity_id TEXT NOT NULL,
+  recipient_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_email TEXT NOT NULL,
+  reminder_tier TEXT NOT NULL CHECK (reminder_tier IN ('24h', '12h', '1h')),
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(entity_type, entity_id, recipient_email, reminder_tier)
+);
+
+ALTER TABLE public.deadline_reminders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view and record their own deadline reminders"
+  ON public.deadline_reminders FOR ALL
+  USING (auth.uid() = recipient_id OR recipient_email = (SELECT email FROM public.users WHERE id = auth.uid()));

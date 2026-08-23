@@ -8,6 +8,7 @@ import { NewProjectModal } from '../projects/NewProjectModal';
 import { UserProfileModal } from '../auth/UserProfileModal';
 import { NetworkModal } from '../network/NetworkModal';
 import { dataService } from '../../services/dataService';
+import { deadlineService } from '../../services/deadlineService';
 import { Project } from '../../types/database';
 import { Inbox as InboxIcon } from 'lucide-react';
 
@@ -83,6 +84,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     };
     update();
     return dataService.subscribe(update);
+  }, [user]);
+
+  // Periodic deadline evaluator for 24h, 12h, and 1h alerts
+  useEffect(() => {
+    if (!user) return;
+    deadlineService.checkAndDispatchDeadlines(user);
+    const interval = setInterval(() => {
+      deadlineService.checkAndDispatchDeadlines(user);
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [user]);
 
   // Global Keyboard shortcuts: Ctrl+K for search, I for inbox

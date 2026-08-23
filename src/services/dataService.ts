@@ -1,7 +1,7 @@
 import { 
   Project, Task, Milestone, InboxItem, Notification, ActivityLog, 
   TrashItem, User, Attachment, UserRole, TeamCategory, TaskPriority,
-  TeamInvitation, AdminPlatformStats, UserConnection 
+  TeamInvitation, AdminPlatformStats, UserConnection, DeadlineReminder, ReminderTier 
 } from '../types/database';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Validation } from '../lib/validation';
@@ -75,6 +75,7 @@ const STORAGE_KEYS = {
   ATTACHMENTS: 'pv_attachments_v1',
   INVITATIONS: 'pv_invitations_v1',
   CONNECTIONS: 'pv_connections_v1',
+  DEADLINE_REMINDERS: 'pv_deadline_reminders_v1',
 };
 
 class DataService {
@@ -331,6 +332,19 @@ class DataService {
         });
         localStorage.setItem(STORAGE_KEYS.CONNECTIONS, JSON.stringify(combined));
         this.notify();
+      }
+
+      // 7. Sync Deadline Reminders Log
+      const { data: dbReminders, error: remErr } = await supabase.from('deadline_reminders').select('*');
+      if (!remErr && dbReminders) {
+        const existing = this.getSentDeadlineReminders();
+        const combined = [...existing];
+        dbReminders.forEach((r: any) => {
+          if (!combined.some(x => x.entity_id === r.entity_id && x.recipient_email.toLowerCase() === r.recipient_email.toLowerCase() && x.reminder_tier === r.reminder_tier)) {
+            combined.push(r);
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.DEADLINE_REMINDERS, JSON.stringify(combined));
       }
 
       // Realtime channel subscriptions
@@ -1804,6 +1818,43 @@ class DataService {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     this.notify();
     return true;
+  }
+
+  // --- DEADLINE REMINDERS LOG ---
+  public getSentDeadlineReminders(): DeadlineReminder[] {
+    const data = localStorage.getItem(STORAGE_KEYS.DEADLINE_REMINDERS);
+    return data ? JSON.parse(data) : [];
+  }
+
+  public isDeadlineReminderSent(entityType: string, entityId: string, recipientEmail: string, tier: ReminderTier): boolean {
+    const all = this.getSentDeadlineReminders();
+    const normalizedEmail = recipientEmail.toLowerCase().trim();
+    return all.some(r => 
+      r.entity_type === entityType && 
+      r.entity_id === entityId && 
+      r.recipient_email.toLowerCase().trim() === normalizedEmail && 
+      r.reminder_tier === tier
+    );
+  }
+
+  public recordDeadlineReminder(reminder: DeadlineReminder): void {
+    const all = this.getSentDeadlineReminders();
+    if (!this.isDeadlineReminderSent(reminder.entity_type, reminder.entity_id, reminder.recipient_email, reminder.reminder_tier)) {
+      all.push(reminder);
+      localStorage.setItem(STORAGE_KEYS.DEADLINE_REMINDERS, JSON.stringify(all));
+
+      if (supabase) {
+        safeSupabaseCall(supabase.from('deadline_reminders').insert([{
+          id: reminder.id,
+          entity_type: reminder.entity_type,
+          entity_id: reminder.entity_id,
+          recipient_id: reminder.recipient_id || null,
+          recipient_email: reminder.recipient_email,
+          reminder_tier: reminder.reminder_tier,
+          sent_at: reminder.sent_at,
+        }]));
+      }
+    }
   }
 
   private updateProjectActivity(projectId: string) {

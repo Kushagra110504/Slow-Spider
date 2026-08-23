@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { LogOut, Mail, Check, Users } from 'lucide-react';
+import { LogOut, Mail, Check, Users, Bell } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../lib/utils';
+import { deadlineService } from '../../services/deadlineService';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   const { user, logout, updateProfile } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
+  const [emailAlerts, setEmailAlerts] = useState<boolean>(deadlineService.isEmailAlertsEnabled());
   const [isSaved, setIsSaved] = useState(false);
 
   if (!user) return null;
@@ -27,6 +29,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
       name: name.trim(),
       avatar_url: avatarUrl.trim() || undefined,
     });
+    deadlineService.setEmailAlertsEnabled(emailAlerts);
     setIsSaved(true);
     setTimeout(() => {
       setIsSaved(false);
@@ -103,8 +106,30 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
           />
         </div>
 
+        {/* Notification Preferences */}
+        <div className="p-3.5 rounded-xl bg-vault-cardHover/70 border border-vault-border space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-[#00E575]" />
+              <div>
+                <h5 className="text-xs font-bold text-vault-textPrimary">Deadline Email Alerts</h5>
+                <p className="text-[11px] text-vault-textMuted">Send automated notifications at 24h, 12h, and 1h before due dates.</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={emailAlerts}
+                onChange={(e) => setEmailAlerts(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-vault-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00E575] border border-vault-border"></div>
+            </label>
+          </div>
+        </div>
+
         {/* Account Info */}
-        <div className="text-[11px] text-vault-textMuted pt-2">
+        <div className="text-[11px] text-vault-textMuted pt-1">
           Member since {formatDate(user.created_at)}
         </div>
 

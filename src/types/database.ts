@@ -167,3 +167,15 @@ export interface AdminPlatformStats {
   database_status: 'Connected' | 'Local Mode';
   recent_logins_24h: number;
 }
+
+export type ReminderTier = '24h' | '12h' | '1h';
+
+export interface DeadlineReminder {
+  id: string;
+  entity_type: 'task' | 'milestone' | 'project';
+  entity_id: string;
+  recipient_id: string;
+  recipient_email: string;
+  reminder_tier: ReminderTier;
+  sent_at: string;
+}
