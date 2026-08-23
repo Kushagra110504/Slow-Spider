@@ -25,12 +25,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleSessionUser = (sessionUser: any) => {
-    const dbUser = dataService.getUserByEmail(sessionUser.email || '') || dataService.getUserById(sessionUser.id);
-    if (dbUser) {
-      setUser(dbUser);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(dbUser));
+    let appUser = dataService.getUserByEmail(sessionUser.email || '') || dataService.getUserById(sessionUser.id);
+    if (appUser) {
+      // Ensure avatar and metadata updates are synced
+      if (sessionUser.user_metadata?.avatar_url && appUser.avatar_url !== sessionUser.user_metadata.avatar_url) {
+        appUser = { ...appUser, avatar_url: sessionUser.user_metadata.avatar_url };
+      }
+      dataService.registerUser(appUser);
+      setUser(appUser);
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(appUser));
     } else {
-      const displayName = sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0] || 'User';
+      const displayName = sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'User';
       const newUser: User = {
         id: sessionUser.id,
         email: sessionUser.email || '',
@@ -42,7 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dataService.registerUser(newUser);
       setUser(newUser);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUser));
+      appUser = newUser;
     }
+    dataService.syncWithSupabase(appUser);
   };
 
   // Initialize Auth state from storage or Supabase session

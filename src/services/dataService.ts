@@ -15,7 +15,11 @@ interface UserCredentials {
 
 // Safe async executor for Supabase queries
 const safeSupabaseCall = (query: PromiseLike<any>) => {
-  Promise.resolve(query).catch((err) => {
+  Promise.resolve(query).then((res) => {
+    if (res && res.error) {
+      console.warn('Supabase operation warning:', res.error);
+    }
+  }).catch((err) => {
     console.warn('Supabase operation warning:', err);
   });
 };

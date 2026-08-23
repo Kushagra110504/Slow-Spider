@@ -16,6 +16,33 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Trigger: Automatically Create Profile in public.users when any User Signs Up (Email or Google OAuth)
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, name, avatar_url, role, is_active, created_at)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://api.dicebear.com/7.x/initials/svg?seed=' || encode(NEW.email::bytea, 'hex') || '&backgroundColor=10b981,06b6d4,6366f1'),
+    'user',
+    TRUE,
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    name = COALESCE(EXCLUDED.name, public.users.name),
+    avatar_url = COALESCE(EXCLUDED.avatar_url, public.users.avatar_url);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+
 -- Trigger: Prevent Client-Side Privilege Escalation on User Creation
 CREATE OR REPLACE FUNCTION public.handle_new_user_role()
 RETURNS TRIGGER AS $$
@@ -38,6 +65,19 @@ DROP TRIGGER IF EXISTS trigger_sanitize_user_role ON public.users;
 CREATE TRIGGER trigger_sanitize_user_role
 BEFORE INSERT ON public.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_role();
+
+-- Backfill any existing auth.users into public.users
+INSERT INTO public.users (id, email, name, avatar_url, role, is_active, created_at)
+SELECT 
+  id, 
+  email, 
+  COALESCE(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1)) as name,
+  COALESCE(raw_user_meta_data->>'avatar_url', 'https://api.dicebear.com/7.x/initials/svg?seed=' || encode(email::bytea, 'hex') || '&backgroundColor=10b981,06b6d4,6366f1') as avatar_url,
+  'user' as role,
+  TRUE as is_active,
+  created_at
+FROM auth.users
+ON CONFLICT (id) DO NOTHING;
 
 -- 2. Projects Table
 CREATE TABLE IF NOT EXISTS public.projects (
@@ -231,6 +271,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE POLICY "Authenticated users can view profile directory"
   ON public.users FOR SELECT
   USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Users can insert their own profile"
+  ON public.users FOR INSERT
+  WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update their own profile"
   ON public.users FOR UPDATE
